@@ -109,6 +109,7 @@ namespace volchara {
                 VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
                 VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME
                 VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME,
+                VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME,
             };
             #else
             const std::vector<const char*> instanceExtensions = {
@@ -119,6 +120,7 @@ namespace volchara {
                 VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
                 VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME,
                 VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME,
+                VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME,
             };
             #endif
             #ifdef NDEBUG

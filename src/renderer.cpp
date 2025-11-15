@@ -366,9 +366,13 @@ namespace volchara {
             .descriptorBindingVariableDescriptorCount = true,
             .runtimeDescriptorArray = true,
         };
-        vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT reqDevDynFeatures{
+        vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT reqDevDyn3Features{
             .pNext = &reqDevDescrFeatures,
             .extendedDynamicState3PolygonMode = true,
+        };
+        vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT reqDevDynFeatures{
+            .pNext = &reqDevDyn3Features,
+            .extendedDynamicState = true,
         };
         vk::DeviceCreateInfo createInfo{
             .pNext = &reqDevDynFeatures,
@@ -814,6 +818,7 @@ namespace volchara {
             vk::DynamicState::eViewport,
             vk::DynamicState::eScissor,
             vk::DynamicState::ePolygonModeEXT,
+            vk::DynamicState::eCullMode,
         };
         vk::PipelineDynamicStateCreateInfo dynamicState{
             .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()),
@@ -1577,12 +1582,12 @@ namespace volchara {
             pushConstants.color = glm::vec4(lights[i]->color, 0.0f);
             pushConstants.model = lights[i]->transform.modelMatrix();
             pushConstants.brightness = lights[i]->brightness;
-            commandBuffers[bufferIndex].pushConstants<PushConstants>(lightPipelineLayout, vk::ShaderStageFlagBits::eFragment, 0, {pushConstants});
+            commandBuffers[bufferIndex].pushConstants<PushConstants>(lightPipelineLayout, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, {pushConstants});
             commandBuffers[bufferIndex].draw(3, 1, 0, 0);
         }
         pushConstants.color = glm::vec4(ambientLight.color, 1.0f);  // w == isAmbient
         pushConstants.brightness = ambientLight.brightness;
-        commandBuffers[bufferIndex].pushConstants<PushConstants>(lightPipelineLayout, vk::ShaderStageFlagBits::eFragment, 0, {pushConstants});
+        commandBuffers[bufferIndex].pushConstants<PushConstants>(lightPipelineLayout, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, {pushConstants});
         commandBuffers[bufferIndex].draw(3, 1, 0, 0);
 
         commandBuffers[bufferIndex].endRenderPass();
