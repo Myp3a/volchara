@@ -369,47 +369,47 @@ namespace volchara {
         auto[width, height, depth] = initData.sizes;
         auto[x, y, z] = calcOrientation(initData.frontOrientationPlane);
         // front
-        vertices.push_back({.pos = {-width / 2.0f, height / 2.0f, depth / 2.0f}, .normal = z, .texCoord = {0, 0}});
-        vertices.push_back({.pos = {-width / 2.0f, -height / 2.0f, depth / 2.0f}, .normal = z, .texCoord = {0, 1}});
-        vertices.push_back({.pos = {width / 2.0f, -height / 2.0f, depth / 2.0f}, .normal = z, .texCoord = {1, 1}});
-        vertices.push_back({.pos = {-width / 2.0f, height / 2.0f, depth / 2.0f}, .normal = z, .texCoord = {0, 0}});
-        vertices.push_back({.pos = {width / 2.0f, -height / 2.0f, depth / 2.0f}, .normal = z, .texCoord = {1, 1}});
-        vertices.push_back({.pos = {width / 2.0f, height / 2.0f, depth / 2.0f}, .normal = z, .texCoord = {1, 0}});
+        vertices.push_back({.pos = {-width / 2.0f, height / 2.0f, depth / 2.0f}, .normal = {0, 0, 1}, .texCoord = {0, 0}});
+        vertices.push_back({.pos = {-width / 2.0f, -height / 2.0f, depth / 2.0f}, .normal = {0, 0, 1}, .texCoord = {0, 1}});
+        vertices.push_back({.pos = {width / 2.0f, -height / 2.0f, depth / 2.0f}, .normal = {0, 0, 1}, .texCoord = {1, 1}});
+        vertices.push_back({.pos = {-width / 2.0f, height / 2.0f, depth / 2.0f}, .normal = {0, 0, 1}, .texCoord = {0, 0}});
+        vertices.push_back({.pos = {width / 2.0f, -height / 2.0f, depth / 2.0f}, .normal = {0, 0, 1}, .texCoord = {1, 1}});
+        vertices.push_back({.pos = {width / 2.0f, height / 2.0f, depth / 2.0f}, .normal = {0, 0, 1}, .texCoord = {1, 0}});
         // right
-        vertices.push_back({.pos = {width / 2.0f, height / 2.0f, depth / 2.0f}, .normal = x, .texCoord = {0, 0}});
-        vertices.push_back({.pos = {width / 2.0f, -height / 2.0f, depth / 2.0f}, .normal = x, .texCoord = {0, 1}});
-        vertices.push_back({.pos = {width / 2.0f, -height / 2.0f, -depth / 2.0f}, .normal = x, .texCoord = {1, 1}});
-        vertices.push_back({.pos = {width / 2.0f, height / 2.0f, depth / 2.0f}, .normal = x, .texCoord = {0, 0}});
-        vertices.push_back({.pos = {width / 2.0f, -height / 2.0f, -depth / 2.0f}, .normal = x, .texCoord = {1, 1}});
-        vertices.push_back({.pos = {width / 2.0f, height / 2.0f, -depth / 2.0f}, .normal = x, .texCoord = {1, 0}});
+        vertices.push_back({.pos = {width / 2.0f, height / 2.0f, depth / 2.0f}, .normal = {1, 0, 0}, .texCoord = {0, 0}});
+        vertices.push_back({.pos = {width / 2.0f, -height / 2.0f, depth / 2.0f}, .normal = {1, 0, 0}, .texCoord = {0, 1}});
+        vertices.push_back({.pos = {width / 2.0f, -height / 2.0f, -depth / 2.0f}, .normal = {1, 0, 0}, .texCoord = {1, 1}});
+        vertices.push_back({.pos = {width / 2.0f, height / 2.0f, depth / 2.0f}, .normal = {1, 0, 0}, .texCoord = {0, 0}});
+        vertices.push_back({.pos = {width / 2.0f, -height / 2.0f, -depth / 2.0f}, .normal = {1, 0, 0}, .texCoord = {1, 1}});
+        vertices.push_back({.pos = {width / 2.0f, height / 2.0f, -depth / 2.0f}, .normal = {1, 0, 0}, .texCoord = {1, 0}});
         // back
-        vertices.push_back({.pos = {width / 2.0f, height / 2.0f, -depth / 2.0f}, .normal = -z, .texCoord = {0, 0}});
-        vertices.push_back({.pos = {width / 2.0f, -height / 2.0f, -depth / 2.0f}, .normal = -z, .texCoord = {0, 1}});
-        vertices.push_back({.pos = {-width / 2.0f, -height / 2.0f, -depth / 2.0f}, .normal = -z, .texCoord = {1, 1}});
-        vertices.push_back({.pos = {width / 2.0f, height / 2.0f, -depth / 2.0f}, .normal = -z, .texCoord = {0, 0}});
-        vertices.push_back({.pos = {-width / 2.0f, -height / 2.0f, -depth / 2.0f}, .normal = -z, .texCoord = {1, 1}});
-        vertices.push_back({.pos = {-width / 2.0f, height / 2.0f, -depth / 2.0f}, .normal = -z, .texCoord = {1, 0}});
+        vertices.push_back({.pos = {width / 2.0f, height / 2.0f, -depth / 2.0f}, .normal = {0, 0, -1}, .texCoord = {0, 0}});
+        vertices.push_back({.pos = {width / 2.0f, -height / 2.0f, -depth / 2.0f}, .normal = {0, 0, -1}, .texCoord = {0, 1}});
+        vertices.push_back({.pos = {-width / 2.0f, -height / 2.0f, -depth / 2.0f}, .normal = {0, 0, -1}, .texCoord = {1, 1}});
+        vertices.push_back({.pos = {width / 2.0f, height / 2.0f, -depth / 2.0f}, .normal = {0, 0, -1}, .texCoord = {0, 0}});
+        vertices.push_back({.pos = {-width / 2.0f, -height / 2.0f, -depth / 2.0f}, .normal = {0, 0, -1}, .texCoord = {1, 1}});
+        vertices.push_back({.pos = {-width / 2.0f, height / 2.0f, -depth / 2.0f}, .normal = {0, 0, -1}, .texCoord = {1, 0}});
         // left
-        vertices.push_back({.pos = {-width / 2.0f, height / 2.0f, -depth / 2.0f}, .normal = -x, .texCoord = {0, 0}});
-        vertices.push_back({.pos = {-width / 2.0f, -height / 2.0f, -depth / 2.0f}, .normal = -x, .texCoord = {0, 1}});
-        vertices.push_back({.pos = {-width / 2.0f, -height / 2.0f, depth / 2.0f}, .normal = -x, .texCoord = {1, 1}});
-        vertices.push_back({.pos = {-width / 2.0f, height / 2.0f, -depth / 2.0f}, .normal = -x, .texCoord = {0, 0}});
-        vertices.push_back({.pos = {-width / 2.0f, -height / 2.0f, depth / 2.0f}, .normal = -x, .texCoord = {1, 1}});
-        vertices.push_back({.pos = {-width / 2.0f, height / 2.0f, depth / 2.0f}, .normal = -x, .texCoord = {1, 0}});
+        vertices.push_back({.pos = {-width / 2.0f, height / 2.0f, -depth / 2.0f}, .normal = {-1, 0, 0}, .texCoord = {0, 0}});
+        vertices.push_back({.pos = {-width / 2.0f, -height / 2.0f, -depth / 2.0f}, .normal = {-1, 0, 0}, .texCoord = {0, 1}});
+        vertices.push_back({.pos = {-width / 2.0f, -height / 2.0f, depth / 2.0f}, .normal = {-1, 0, 0}, .texCoord = {1, 1}});
+        vertices.push_back({.pos = {-width / 2.0f, height / 2.0f, -depth / 2.0f}, .normal = {-1, 0, 0}, .texCoord = {0, 0}});
+        vertices.push_back({.pos = {-width / 2.0f, -height / 2.0f, depth / 2.0f}, .normal = {-1, 0, 0}, .texCoord = {1, 1}});
+        vertices.push_back({.pos = {-width / 2.0f, height / 2.0f, depth / 2.0f}, .normal = {-1, 0, 0}, .texCoord = {1, 0}});
         // top
-        vertices.push_back({.pos = {width / 2.0f, height / 2.0f, depth / 2.0f}, .normal = y, .texCoord = {0, 0}});
-        vertices.push_back({.pos = {width / 2.0f, height / 2.0f, -depth / 2.0f}, .normal = y, .texCoord = {0, 1}});
-        vertices.push_back({.pos = {-width / 2.0f, height / 2.0f, -depth / 2.0f}, .normal = y, .texCoord = {1, 1}});
-        vertices.push_back({.pos = {width / 2.0f, height / 2.0f, depth / 2.0f}, .normal = y, .texCoord = {0, 0}});
-        vertices.push_back({.pos = {-width / 2.0f, height / 2.0f, -depth / 2.0f}, .normal = y, .texCoord = {1, 1}});
-        vertices.push_back({.pos = {-width / 2.0f, height / 2.0f, depth / 2.0f}, .normal = y, .texCoord = {1, 0}});
+        vertices.push_back({.pos = {width / 2.0f, height / 2.0f, depth / 2.0f}, .normal = {0, 1, 0}, .texCoord = {0, 0}});
+        vertices.push_back({.pos = {width / 2.0f, height / 2.0f, -depth / 2.0f}, .normal = {0, 1, 0}, .texCoord = {0, 1}});
+        vertices.push_back({.pos = {-width / 2.0f, height / 2.0f, -depth / 2.0f}, .normal = {0, 1, 0}, .texCoord = {1, 1}});
+        vertices.push_back({.pos = {width / 2.0f, height / 2.0f, depth / 2.0f}, .normal = {0, 1, 0}, .texCoord = {0, 0}});
+        vertices.push_back({.pos = {-width / 2.0f, height / 2.0f, -depth / 2.0f}, .normal = {0, 1, 0}, .texCoord = {1, 1}});
+        vertices.push_back({.pos = {-width / 2.0f, height / 2.0f, depth / 2.0f}, .normal = {0, 1, 0}, .texCoord = {1, 0}});
         // bot
-        vertices.push_back({.pos = {width / 2.0f, -height / 2.0f, -depth / 2.0f}, .normal = -y, .texCoord = {0, 0}});
-        vertices.push_back({.pos = {width / 2.0f, -height / 2.0f, depth / 2.0f}, .normal = -y, .texCoord = {0, 1}});
-        vertices.push_back({.pos = {-width / 2.0f, -height / 2.0f, depth / 2.0f}, .normal = -y, .texCoord = {1, 1}});
-        vertices.push_back({.pos = {width / 2.0f, -height / 2.0f, -depth / 2.0f}, .normal = -y, .texCoord = {0, 0}});
-        vertices.push_back({.pos = {-width / 2.0f, -height / 2.0f, depth / 2.0f}, .normal = -y, .texCoord = {1, 1}});
-        vertices.push_back({.pos = {-width / 2.0f, -height / 2.0f, -depth / 2.0f}, .normal = -y, .texCoord = {1, 0}});
+        vertices.push_back({.pos = {width / 2.0f, -height / 2.0f, -depth / 2.0f}, .normal = {0, -1, 0}, .texCoord = {0, 0}});
+        vertices.push_back({.pos = {width / 2.0f, -height / 2.0f, depth / 2.0f}, .normal = {0, -1, 0}, .texCoord = {0, 1}});
+        vertices.push_back({.pos = {-width / 2.0f, -height / 2.0f, depth / 2.0f}, .normal = {0, -1, 0}, .texCoord = {1, 1}});
+        vertices.push_back({.pos = {width / 2.0f, -height / 2.0f, -depth / 2.0f}, .normal = {0, -1, 0}, .texCoord = {0, 0}});
+        vertices.push_back({.pos = {-width / 2.0f, -height / 2.0f, depth / 2.0f}, .normal = {0, -1, 0}, .texCoord = {1, 1}});
+        vertices.push_back({.pos = {-width / 2.0f, -height / 2.0f, -depth / 2.0f}, .normal = {0, -1, 0}, .texCoord = {1, 0}});
 
         Box obj(renderer, {}, {}, center, {1, 1, 1}, glm::quatLookAtRH(z, y));
         if (wIndices){
