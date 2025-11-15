@@ -10,6 +10,7 @@ layout(push_constant) uniform PushConstants {
     uint textureId;
     vec4 color;
     float brightness;
+    uint debugFlags;
 } pcs;
 
 layout(location = 0) in vec3 inPosition;

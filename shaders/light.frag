@@ -20,9 +20,14 @@ layout(push_constant) uniform PushConstants {
     uint textureId;
     vec4 color;
     float brightness;
+    uint debugFlags;
 } pcs;
 
 layout(location = 0) out vec4 outColor;
+
+const uint DEBUG_COLOR_NORMALS = 1u << 0;
+const uint DEBUG_COLOR_DEPTH = 1u << 1;
+const uint DEBUG_COLOR_WIREFRAME = 1u << 2;
 
 vec3 reconstructFragWorldPos(float depth, vec2 ndc) {
     mat4 invViewProj = inverse(ubo.proj * ubo.view);
@@ -55,14 +60,18 @@ void main() {
     vec3 inNormal = subpassLoad(spNormal).xyz;
     float inDepth = subpassLoad(spDepth).x;
     
-    #ifdef SHOW_NORMALS
+    if ((pcs.debugFlags & DEBUG_COLOR_NORMALS) != 0u) {
         outColor = vec4(abs(inNormal), 1.0);
         return;
-    #endif
-    #ifdef SHOW_DEPTH
+    }
+    if ((pcs.debugFlags & DEBUG_COLOR_DEPTH) != 0u) {
         outColor = vec4(vec3(inDepth), 1.0);
         return;
-    #endif
+    }
+    if ((pcs.debugFlags & DEBUG_COLOR_WIREFRAME) != 0u) {
+        outColor = vec4(inColor, 1.0);
+        return;
+    }
     #ifdef IGNORE_LIGHTS
         outColor = vec4(inColor, 1.0);
         return;

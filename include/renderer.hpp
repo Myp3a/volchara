@@ -42,6 +42,19 @@ namespace volchara {
         std::vector<vk::PresentModeKHR> presentModes;
     };
 
+    enum DebugViewMode {
+        OFF,
+        NORMALS,
+        DEPTH,
+        WIREFRAME,
+    };
+
+    struct DebugFeatures {
+        bool culling = true;
+        DebugViewMode viewMode = DebugViewMode::OFF;
+        bool lightning = true;
+    };
+
     class Renderer {
         friend class volchara::Object;
         friend class volchara::GLTFModel;
@@ -81,18 +94,21 @@ namespace volchara {
             }
         
         private:
+            DebugFeatures debugFeatures;
             const std::vector<const char*> validationLayers = {
                 "VK_LAYER_KHRONOS_validation"
             };
             #if __APPLE__
             const std::vector<const char*> instanceExtensions = {
-                VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
                 VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME
+                VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
             };
             const std::vector<const char*> deviceExtensions = {
-                VK_KHR_SWAPCHAIN_EXTENSION_NAME,
                 VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
-                VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME
+                VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+                VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+                VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME
+                VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME,
             };
             #else
             const std::vector<const char*> instanceExtensions = {
@@ -100,7 +116,9 @@ namespace volchara {
             };
             const std::vector<const char*> deviceExtensions = {
                 VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-                VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME
+                VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+                VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME,
+                VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME,
             };
             #endif
             #ifdef NDEBUG
@@ -109,7 +127,7 @@ namespace volchara {
             const bool enableValidationLayers = true;
             #endif
             static bool hasRequiredPhysicalDeviceFeatures(vk::PhysicalDeviceFeatures2 deviceFeatures) {
-                return deviceFeatures.features.samplerAnisotropy;
+                return deviceFeatures.features.samplerAnisotropy && deviceFeatures.features.fillModeNonSolid;
             }
             static bool hasRequiredPhysicalDeviceDescriptorFeatures(vk::PhysicalDeviceDescriptorIndexingFeaturesEXT deviceFeatures) {
                 return deviceFeatures.descriptorBindingPartiallyBound && deviceFeatures.descriptorBindingSampledImageUpdateAfterBind && deviceFeatures.descriptorBindingVariableDescriptorCount && deviceFeatures.runtimeDescriptorArray;
@@ -177,6 +195,8 @@ namespace volchara {
             std::vector<vk::raii::DescriptorSet> descriptorSetsAmbientLightUBO;
             std::vector<vk::raii::DescriptorSet> descriptorSetsDirectionalLightUBO;
             std::vector<vk::raii::DescriptorSet> descriptorSetsLightSubpass;
+
+            PushConstants pushConstants;
 
             vk::raii::Sampler textureSampler = nullptr;
             std::vector<RAIIvmaImage> textures;
@@ -273,6 +293,7 @@ namespace volchara {
             void createCommandBuffers();
             void createSyncObjects();
             void updateCameraPosition(float passedSeconds);
+            void handleDebugModes();
             void recreateSwapChain();
             void recordCommandBuffer(uint32_t imageIndex, uint32_t bufferIndex);
             void updateUniformBuffer(uint32_t imageIndex);

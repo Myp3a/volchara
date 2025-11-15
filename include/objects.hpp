@@ -46,11 +46,18 @@ namespace volchara {
         glm::mat4 model;
     };
 
+    enum PushConstantsDebugFlags : uint32_t {
+        COLOR_NORMALS = 1u << 0,
+        COLOR_DEPTH = 1u << 1,
+        COLOR_WIREFRAME = 1u << 2,
+    };
+
     struct PushConstants {
         glm::mat4 model;
         uint32_t textureIndex = 0;
         glm::vec4 color{0.0f, 0.0f, 0.0f, 0.0f};
         float brightness = 0.0f;
+        uint32_t debugFlags = 0;
     };
 
     struct Vertex {

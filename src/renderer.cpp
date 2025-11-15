@@ -357,6 +357,7 @@ namespace volchara {
 
         const std::vector<const char *> empty;
         vk::PhysicalDeviceFeatures reqDevFeatures{
+            .fillModeNonSolid = true,
             .samplerAnisotropy = true,
         };
         vk::PhysicalDeviceDescriptorIndexingFeaturesEXT reqDevDescrFeatures{
@@ -365,8 +366,12 @@ namespace volchara {
             .descriptorBindingVariableDescriptorCount = true,
             .runtimeDescriptorArray = true,
         };
-        vk::DeviceCreateInfo createInfo{
+        vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT reqDevDynFeatures{
             .pNext = &reqDevDescrFeatures,
+            .extendedDynamicState3PolygonMode = true,
+        };
+        vk::DeviceCreateInfo createInfo{
+            .pNext = &reqDevDynFeatures,
             .queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size()),
             .pQueueCreateInfos = queueCreateInfos.data(),
             .enabledLayerCount = static_cast<uint32_t>((enableValidationLayers) ? 1 : 0),
@@ -782,9 +787,11 @@ namespace volchara {
             .scissorCount = 1,
         };
 
+        vk::PolygonMode mode = debugFeatures.viewMode == DebugViewMode::WIREFRAME ? vk::PolygonMode::eLine : vk::PolygonMode::eFill;
+        vk::CullModeFlags culling = debugFeatures.culling ? vk::CullModeFlagBits::eBack : vk::CullModeFlagBits::eNone;
         vk::PipelineRasterizationStateCreateInfo rasterizer{
-            .polygonMode = vk::PolygonMode::eFill,
-            .cullMode = vk::CullModeFlagBits::eBack,
+            .polygonMode = mode,
+            .cullMode = culling,
             .frontFace = vk::FrontFace::eCounterClockwise,
             .lineWidth = 1,
         };
@@ -805,7 +812,8 @@ namespace volchara {
 
         std::vector<vk::DynamicState> dynamicStates = {
             vk::DynamicState::eViewport,
-            vk::DynamicState::eScissor
+            vk::DynamicState::eScissor,
+            vk::DynamicState::ePolygonModeEXT,
         };
         vk::PipelineDynamicStateCreateInfo dynamicState{
             .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()),
@@ -1443,6 +1451,49 @@ namespace volchara {
         cursorOffset.y = 0;
     }
 
+    void Renderer::handleDebugModes() {
+        if (pressedKeys.contains(GLFW_KEY_RIGHT_CONTROL) && pressedKeys.contains(GLFW_KEY_1)) {
+            if (debugFeatures.viewMode != DebugViewMode::OFF) {
+                pressedKeys.erase(GLFW_KEY_1);
+                pushConstants.debugFlags &= ~PushConstantsDebugFlags::COLOR_NORMALS;
+                pushConstants.debugFlags &= ~PushConstantsDebugFlags::COLOR_DEPTH;
+                pushConstants.debugFlags &= ~PushConstantsDebugFlags::COLOR_WIREFRAME;
+                debugFeatures.viewMode = DebugViewMode::OFF;
+            }
+        }
+        if (pressedKeys.contains(GLFW_KEY_RIGHT_CONTROL) && pressedKeys.contains(GLFW_KEY_2)) {
+            if (debugFeatures.viewMode != DebugViewMode::NORMALS) {
+                pressedKeys.erase(GLFW_KEY_2);
+                pushConstants.debugFlags |= PushConstantsDebugFlags::COLOR_NORMALS;
+                pushConstants.debugFlags &= ~PushConstantsDebugFlags::COLOR_DEPTH;
+                pushConstants.debugFlags &= ~PushConstantsDebugFlags::COLOR_WIREFRAME;
+                debugFeatures.viewMode = DebugViewMode::NORMALS;
+            }
+        }
+        if (pressedKeys.contains(GLFW_KEY_RIGHT_CONTROL) && pressedKeys.contains(GLFW_KEY_3)) {
+            if (debugFeatures.viewMode != DebugViewMode::DEPTH) {
+                pressedKeys.erase(GLFW_KEY_3);
+                pushConstants.debugFlags &= ~PushConstantsDebugFlags::COLOR_NORMALS;
+                pushConstants.debugFlags |= PushConstantsDebugFlags::COLOR_DEPTH;
+                pushConstants.debugFlags &= ~PushConstantsDebugFlags::COLOR_WIREFRAME;
+                debugFeatures.viewMode = DebugViewMode::DEPTH;
+            }
+        }
+        if (pressedKeys.contains(GLFW_KEY_RIGHT_CONTROL) && pressedKeys.contains(GLFW_KEY_4)) {
+            if (debugFeatures.viewMode != DebugViewMode::WIREFRAME) {
+                pressedKeys.erase(GLFW_KEY_4);
+                pushConstants.debugFlags &= ~PushConstantsDebugFlags::COLOR_NORMALS;
+                pushConstants.debugFlags &= ~PushConstantsDebugFlags::COLOR_DEPTH;
+                pushConstants.debugFlags |= PushConstantsDebugFlags::COLOR_WIREFRAME;
+                debugFeatures.viewMode = DebugViewMode::WIREFRAME;
+            }
+        }
+        if (pressedKeys.contains(GLFW_KEY_RIGHT_CONTROL) && pressedKeys.contains(GLFW_KEY_C)) {
+            pressedKeys.erase(GLFW_KEY_C);
+            debugFeatures.culling = !debugFeatures.culling;
+        }
+    }
+
     void Renderer::recreateSwapChain() {
         int width = 0, height = 0;
         glfwGetFramebufferSize(window, &width, &height);
@@ -1501,6 +1552,8 @@ namespace volchara {
             .extent = swapChainExtent,
         };
         commandBuffers[bufferIndex].setScissor(0, scissor);
+        commandBuffers[bufferIndex].setPolygonModeEXT(debugFeatures.viewMode == DebugViewMode::WIREFRAME ? vk::PolygonMode::eLine : vk::PolygonMode::eFill);
+        commandBuffers[bufferIndex].setCullMode(debugFeatures.culling ? vk::CullModeFlagBits::eBack : vk::CullModeFlagBits::eNone);
         commandBuffers[bufferIndex].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, colorPipelineLayout, 0, *descriptorSetsUBO[bufferIndex], nullptr);
         commandBuffers[bufferIndex].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, colorPipelineLayout, 1, *descriptorSetsTextures[0], nullptr);
         commandBuffers[bufferIndex].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, colorPipelineLayout, 2, *descriptorSetsSSBO[0], nullptr);
@@ -1508,30 +1561,28 @@ namespace volchara {
         commandBuffers[bufferIndex].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, colorPipelineLayout, 4, *descriptorSetsDirectionalLightUBO[0], nullptr);
         uint32_t alreadyDrawn = 0;
         for (int i = 0; i < objects.size(); i++) {
-            PushConstants cnst;
-            cnst.model = objects[i]->transform.modelMatrix();
-            cnst.textureIndex = objects[i]->textureIndex;
-            commandBuffers[bufferIndex].pushConstants<PushConstants>(colorPipelineLayout, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, {cnst});
+            pushConstants.model = objects[i]->transform.modelMatrix();
+            pushConstants.textureIndex = objects[i]->textureIndex;
+            commandBuffers[bufferIndex].pushConstants<PushConstants>(colorPipelineLayout, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, {pushConstants});
             commandBuffers[bufferIndex].drawIndexed(objects[i]->indices.size(), 1, alreadyDrawn, 0, 0);
             alreadyDrawn += objects[i]->indices.size();
         }
 
         commandBuffers[bufferIndex].nextSubpass(vk::SubpassContents::eInline);
         commandBuffers[bufferIndex].bindPipeline(vk::PipelineBindPoint::eGraphics, lightGraphicsPipeline);
+        commandBuffers[bufferIndex].setPolygonModeEXT(vk::PolygonMode::eFill);
         commandBuffers[bufferIndex].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, lightPipelineLayout, 0, *descriptorSetsLightSubpass[imageIndex], nullptr);
         commandBuffers[bufferIndex].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, lightPipelineLayout, 1, *descriptorSetsUBO[bufferIndex], nullptr);
         for (int i = 0; i < lights.size(); i++) {
-            PushConstants cnst;
-            cnst.color = glm::vec4(lights[i]->color, 0.0f);
-            cnst.model = lights[i]->transform.modelMatrix();
-            cnst.brightness = lights[i]->brightness;
-            commandBuffers[bufferIndex].pushConstants<PushConstants>(lightPipelineLayout, vk::ShaderStageFlagBits::eFragment, 0, {cnst});
+            pushConstants.color = glm::vec4(lights[i]->color, 0.0f);
+            pushConstants.model = lights[i]->transform.modelMatrix();
+            pushConstants.brightness = lights[i]->brightness;
+            commandBuffers[bufferIndex].pushConstants<PushConstants>(lightPipelineLayout, vk::ShaderStageFlagBits::eFragment, 0, {pushConstants});
             commandBuffers[bufferIndex].draw(3, 1, 0, 0);
         }
-        PushConstants cnst;
-        cnst.color = glm::vec4(ambientLight.color, 1.0f);  // w == isAmbient
-        cnst.brightness = ambientLight.brightness;
-        commandBuffers[bufferIndex].pushConstants<PushConstants>(lightPipelineLayout, vk::ShaderStageFlagBits::eFragment, 0, {cnst});
+        pushConstants.color = glm::vec4(ambientLight.color, 1.0f);  // w == isAmbient
+        pushConstants.brightness = ambientLight.brightness;
+        commandBuffers[bufferIndex].pushConstants<PushConstants>(lightPipelineLayout, vk::ShaderStageFlagBits::eFragment, 0, {pushConstants});
         commandBuffers[bufferIndex].draw(3, 1, 0, 0);
 
         commandBuffers[bufferIndex].endRenderPass();
@@ -1574,6 +1625,7 @@ namespace volchara {
         }
 
         updateCameraPosition(passedSeconds);
+        handleDebugModes();
         
         std::pair<vk::Result, uint32_t> nextImagePair = swapChain.acquireNextImage(UINT64_MAX, imageAvailableSemaphores[currentFrame], nullptr);
         if (nextImagePair.first == vk::Result::eErrorOutOfDateKHR || nextImagePair.first == vk::Result::eSuboptimalKHR || framebufferResized) {
