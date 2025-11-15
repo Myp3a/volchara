@@ -52,7 +52,7 @@ namespace volchara {
         COLOR_WIREFRAME = 1u << 2,
     };
 
-    struct PushConstants {
+    struct alignas(16) PushConstants {
         glm::mat4 model;
         uint32_t textureIndex = 0;
         glm::vec4 color{0.0f, 0.0f, 0.0f, 0.0f};

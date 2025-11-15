@@ -1464,6 +1464,7 @@ namespace volchara {
                 pushConstants.debugFlags &= ~PushConstantsDebugFlags::COLOR_DEPTH;
                 pushConstants.debugFlags &= ~PushConstantsDebugFlags::COLOR_WIREFRAME;
                 debugFeatures.viewMode = DebugViewMode::OFF;
+                debugFeatures.lightning = true;
             }
         }
         if (pressedKeys.contains(GLFW_KEY_RIGHT_CONTROL) && pressedKeys.contains(GLFW_KEY_2)) {
@@ -1473,6 +1474,7 @@ namespace volchara {
                 pushConstants.debugFlags &= ~PushConstantsDebugFlags::COLOR_DEPTH;
                 pushConstants.debugFlags &= ~PushConstantsDebugFlags::COLOR_WIREFRAME;
                 debugFeatures.viewMode = DebugViewMode::NORMALS;
+                debugFeatures.lightning = false;
             }
         }
         if (pressedKeys.contains(GLFW_KEY_RIGHT_CONTROL) && pressedKeys.contains(GLFW_KEY_3)) {
@@ -1482,6 +1484,7 @@ namespace volchara {
                 pushConstants.debugFlags |= PushConstantsDebugFlags::COLOR_DEPTH;
                 pushConstants.debugFlags &= ~PushConstantsDebugFlags::COLOR_WIREFRAME;
                 debugFeatures.viewMode = DebugViewMode::DEPTH;
+                debugFeatures.lightning = false;
             }
         }
         if (pressedKeys.contains(GLFW_KEY_RIGHT_CONTROL) && pressedKeys.contains(GLFW_KEY_4)) {
@@ -1491,6 +1494,7 @@ namespace volchara {
                 pushConstants.debugFlags &= ~PushConstantsDebugFlags::COLOR_DEPTH;
                 pushConstants.debugFlags |= PushConstantsDebugFlags::COLOR_WIREFRAME;
                 debugFeatures.viewMode = DebugViewMode::WIREFRAME;
+                debugFeatures.lightning = false;
             }
         }
         if (pressedKeys.contains(GLFW_KEY_RIGHT_CONTROL) && pressedKeys.contains(GLFW_KEY_C)) {
@@ -1578,17 +1582,24 @@ namespace volchara {
         commandBuffers[bufferIndex].setPolygonModeEXT(vk::PolygonMode::eFill);
         commandBuffers[bufferIndex].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, lightPipelineLayout, 0, *descriptorSetsLightSubpass[imageIndex], nullptr);
         commandBuffers[bufferIndex].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, lightPipelineLayout, 1, *descriptorSetsUBO[bufferIndex], nullptr);
-        for (int i = 0; i < lights.size(); i++) {
-            pushConstants.color = glm::vec4(lights[i]->color, 0.0f);
-            pushConstants.model = lights[i]->transform.modelMatrix();
-            pushConstants.brightness = lights[i]->brightness;
+        if (debugFeatures.lightning) {
+            for (int i = 0; i < lights.size(); i++) {
+                pushConstants.color = glm::vec4(lights[i]->color, 0.0f);
+                pushConstants.model = lights[i]->transform.modelMatrix();
+                pushConstants.brightness = lights[i]->brightness;
+                commandBuffers[bufferIndex].pushConstants<PushConstants>(lightPipelineLayout, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, {pushConstants});
+                commandBuffers[bufferIndex].draw(3, 1, 0, 0);
+            }
+            pushConstants.color = glm::vec4(ambientLight.color, 1.0f);  // w == isAmbient
+            pushConstants.brightness = ambientLight.brightness;
+            commandBuffers[bufferIndex].pushConstants<PushConstants>(lightPipelineLayout, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, {pushConstants});
+            commandBuffers[bufferIndex].draw(3, 1, 0, 0);
+        } else {
+            pushConstants.color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);  // w == isAmbient
+            pushConstants.brightness = 1.0f;
             commandBuffers[bufferIndex].pushConstants<PushConstants>(lightPipelineLayout, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, {pushConstants});
             commandBuffers[bufferIndex].draw(3, 1, 0, 0);
         }
-        pushConstants.color = glm::vec4(ambientLight.color, 1.0f);  // w == isAmbient
-        pushConstants.brightness = ambientLight.brightness;
-        commandBuffers[bufferIndex].pushConstants<PushConstants>(lightPipelineLayout, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, {pushConstants});
-        commandBuffers[bufferIndex].draw(3, 1, 0, 0);
 
         commandBuffers[bufferIndex].endRenderPass();
 
