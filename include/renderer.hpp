@@ -75,7 +75,7 @@ namespace volchara {
             void setAmbientLight(InitDataLight data);
             DirectionalLight objDirectionalLightFromWorldCoordinates(InitDataLight data);
 
-            static std::vector<char *> readFile(const std::filesystem::path filename, bool asText = false) {
+            static std::vector<unsigned char> readFile(const std::filesystem::path filename, bool asText = false) {
                 std::ifstream file(filename, std::ios::ate | (asText ? 0 : std::ios::binary));
         
                 if (!file.is_open()) {
@@ -83,7 +83,7 @@ namespace volchara {
                 }
         
                 size_t fileSize = (size_t) file.tellg();
-                std::vector<char *> buffer(fileSize);
+                std::vector<unsigned char> buffer(fileSize);
         
                 file.seekg(0);
                 file.read(reinterpret_cast<char *>(buffer.data()), fileSize);
@@ -272,7 +272,7 @@ namespace volchara {
             vk::Format findDepthFormat();
             void createRenderPass();
             void createDescriptorSetLayout();
-            vk::raii::ShaderModule createShaderModule(const std::vector<char *>& code);
+            vk::raii::ShaderModule createShaderModule(const std::vector<unsigned char>& code);
             void createGraphicsPipeline();
             void createCommandPool();
             void createStagingBuffer();
@@ -288,7 +288,7 @@ namespace volchara {
             void createNormalResources();
             void createIntermediateColorResources();
             void createFramebuffers();
-            uint32_t createTextureImage(const std::filesystem::path path);
+            uint32_t createTextureImage(std::vector<unsigned char> textureData);
             void createDescriptorPool();
             void createDescriptorSets();
             uint32_t loadTextureToDescriptors(uint32_t textureIndex);

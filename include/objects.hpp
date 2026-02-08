@@ -55,6 +55,7 @@ namespace volchara {
     struct alignas(16) PushConstants {
         glm::mat4 model;
         uint32_t textureIndex = 0;
+        uint32_t normalIndex = 0;
         glm::vec4 color{0.0f, 0.0f, 0.0f, 0.0f};
         float brightness = 0.0f;
         uint32_t debugFlags = 0;
@@ -126,6 +127,7 @@ namespace volchara {
         Transform transform;
         Renderer* renderer;
         uint32_t textureIndex = 0;
+        uint32_t normalIndex = 0;
         uint32_t maxVertexIndex = 0;
 
         Object(Renderer &renderer, std::vector<Vertex> initVertices, std::vector<uint32_t> initIndices = {}, glm::vec3 translation = {0, 0, 0}, glm::vec3 scaling = {1, 1, 1}, glm::quat rotation = {1,0,0,0});

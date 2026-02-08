@@ -184,7 +184,8 @@ namespace volchara {
         }
     }
     void Object::loadTexture(const std::filesystem::path path) {
-        textureIndex = renderer->createTextureImage(path);
+        std::vector<unsigned char> textureData = renderer->readFile(path);
+        textureIndex = renderer->createTextureImage(textureData);
         renderer->loadTextureToDescriptors(textureIndex);
     }
     void Object::generateIndices(std::vector<Vertex> fromVertices) {
@@ -262,10 +263,27 @@ namespace volchara {
         std::map<int, int> textureMapping;
         for (tinygltf::Texture& texture : model.textures) {
             int modelTextureId = texture.source;
-            std::filesystem::path texturePath = modelPath.parent_path() / model.images[modelTextureId].uri;
-            int rendererTextureId = renderer.createTextureImage(texturePath);
-            renderer.loadTextureToDescriptors(rendererTextureId);
-            textureMapping[modelTextureId] = rendererTextureId;
+            if (!model.images[modelTextureId].uri.empty()) {
+                // external
+                std::filesystem::path texturePath = modelPath.parent_path() / model.images[modelTextureId].uri;
+                std::vector<unsigned char> textureData = renderer.readFile(texturePath);
+                int rendererTextureId = renderer.createTextureImage(textureData);
+                renderer.loadTextureToDescriptors(rendererTextureId);
+                textureMapping[modelTextureId] = rendererTextureId;
+            } else {
+                // internal
+                int targetBufferView = model.images[modelTextureId].bufferView;
+                if (targetBufferView != -1) {
+                    tinygltf::BufferView& textureView = model.bufferViews[targetBufferView];
+                    tinygltf::Buffer& texturePosition = model.buffers[textureView.buffer];
+                    std::vector<unsigned char> textureData = std::vector<unsigned char>(texturePosition.data.begin() + textureView.byteOffset, texturePosition.data.begin() + textureView.byteOffset + textureView.byteLength);
+                    int rendererTextureId = renderer.createTextureImage(textureData);
+                    renderer.loadTextureToDescriptors(rendererTextureId);
+                    textureMapping[modelTextureId] = rendererTextureId;
+                } else {
+                    solid_color = true;
+                }
+            }
         }
         std::vector<Vertex> resVertices;
         std::vector<uint32_t> resIndices;
@@ -318,9 +336,20 @@ namespace volchara {
                     tinygltf::Accessor accessorIndices = model.accessors[prim.indices];
                     tinygltf::BufferView& bufferViewIndices = model.bufferViews[accessorIndices.bufferView];
                     tinygltf::Buffer& bufferIndices = model.buffers[bufferViewIndices.buffer];
-                    const uint32_t* indices = reinterpret_cast<const uint32_t*>(&bufferIndices.data[bufferViewIndices.byteOffset + accessorIndices.byteOffset]);
+                    const char* indices = reinterpret_cast<const char*>(&bufferIndices.data[bufferViewIndices.byteOffset + accessorIndices.byteOffset]);
                     for (size_t i = 0; i < accessorIndices.count; i++) {
-                        uint32_t index = indices[i];
+                        uint32_t index;
+                        switch (accessorIndices.componentType) {
+                            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+                                index = indices[i];
+                                break;
+                            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
+                                index = reinterpret_cast<const uint16_t*>(indices)[i];
+                                break;
+                            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
+                                index = reinterpret_cast<const uint32_t*>(indices)[i];
+                                break;
+                        }
                         resIndices.push_back(index + indexOffset);
                     }
                     for (size_t vertexId = 0; vertexId < accessorPosition.count; vertexId++) {
@@ -348,7 +377,11 @@ namespace volchara {
             }
         }
         GLTFModel obj(renderer, resVertices, resIndices);
-        obj.textureIndex = textureMapping[0];
+        if (!solid_color) {
+            tinygltf::Material& baseMat = model.materials[0];
+            obj.textureIndex = textureMapping[baseMat.values["baseColorTexture"].number_value];
+            obj.normalIndex = textureMapping[baseMat.normalTexture.index];
+        }
         return obj;
     }
 

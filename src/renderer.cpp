@@ -156,10 +156,10 @@ namespace volchara {
         createNormalResources();
         createIntermediateColorResources();
         createFramebuffers();
-        uint32_t lisa = createTextureImage(getResourceDir() / "textures/uv.png");
+        uint32_t uv = createTextureImage(readFile(getResourceDir() / "textures/uv.png"));
         createDescriptorPool();
         createDescriptorSets();
-        loadTextureToDescriptors(lisa);
+        loadTextureToDescriptors(uv);
         createCommandBuffers();
         createSyncObjects();
     }
@@ -743,7 +743,7 @@ namespace volchara {
         descriptorSetLayoutLightSubpass = device.createDescriptorSetLayout(lightSubpassLayoutInfo);
     }
 
-    vk::raii::ShaderModule Renderer::createShaderModule(const std::vector<char *>& code) {
+    vk::raii::ShaderModule Renderer::createShaderModule(const std::vector<unsigned char>& code) {
         vk::ShaderModuleCreateInfo createInfo{
             .codeSize = code.size(),
             .pCode = reinterpret_cast<const uint32_t *>(code.data()),
@@ -1162,11 +1162,10 @@ namespace volchara {
         }
     }
 
-    uint32_t Renderer::createTextureImage(const std::filesystem::path path) {
+    uint32_t Renderer::createTextureImage(std::vector<unsigned char> textureData) {
         // TODO: deduplication
         int width, height, channels;
-        std::vector<char *> texture = readFile(path);
-        stbi_uc* pixels = stbi_load_from_memory(reinterpret_cast<unsigned char*>(texture.data()), texture.size(), &width, &height, &channels, STBI_rgb_alpha);
+        stbi_uc* pixels = stbi_load_from_memory(textureData.data(), textureData.size(), &width, &height, &channels, STBI_rgb_alpha);
         vk::DeviceSize imageSize = width * height * STBI_rgb_alpha;
 
         if (!pixels) {
@@ -1572,6 +1571,7 @@ namespace volchara {
         for (int i = 0; i < objects.size(); i++) {
             pushConstants.model = objects[i]->transform.modelMatrix();
             pushConstants.textureIndex = objects[i]->textureIndex;
+            pushConstants.normalIndex = objects[i]->normalIndex;
             commandBuffers[bufferIndex].pushConstants<PushConstants>(colorPipelineLayout, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, {pushConstants});
             commandBuffers[bufferIndex].drawIndexed(objects[i]->indices.size(), 1, alreadyDrawn, 0, 0);
             alreadyDrawn += objects[i]->indices.size();
