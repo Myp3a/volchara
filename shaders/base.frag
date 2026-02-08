@@ -23,6 +23,7 @@ layout(set = 4, binding = 0) uniform DirectionalLightUniformBufferObject {
 layout(push_constant) uniform PushConstants {
     mat4 model;
     uint textureId;
+    uint normalId;
     vec4 color;
     float brightness;
     uint debugFlags;
@@ -47,5 +48,9 @@ void main() {
         pixelColor = texture(sampler2D(textures[pcs.textureId], texSampler), fragTexCoord);
     }
     outColor = pixelColor;
-    outNormal = vec4(fragNormal, 1.0);
+    if (pcs.normalId != 0) {
+        outNormal = texture(sampler2D(textures[pcs.normalId], texSampler), fragTexCoord);
+    } else {
+        outNormal = vec4(fragNormal, 1.0);
+    }
 }

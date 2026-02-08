@@ -1,5 +1,7 @@
 #version 450
 
+#define ALLOW_NO_NORMAL
+
 layout(input_attachment_index=0, set=0, binding=0) uniform subpassInput spColor;
 layout(input_attachment_index=1, set=0, binding=1) uniform subpassInput spNormal;
 layout(input_attachment_index=2, set=0, binding=2) uniform subpassInput spDepth;
@@ -14,6 +16,7 @@ layout(set=1, binding=0) uniform UniformBufferObject {
 layout(push_constant) uniform PushConstants {
     mat4 model;
     uint textureId;
+    uint normalId;
     vec4 color;
     float brightness;
     uint debugFlags;
@@ -47,6 +50,11 @@ float calcLightIntensity(vec3 lightPos, vec3 fragPos, vec3 fragNormal, bool phys
     else {
         lightDistanceIntensity = min(max(pcs.brightness - lightDist, 0.0), 1.0);
     }
+    #ifdef ALLOW_NO_NORMAL
+        if (fragNormal == vec3(0.0, 0.0, 0.0)) {
+            return lightDistanceIntensity;
+        }
+    #endif
     float lightNormalizedIntensity = max(dot(fragNormal, normalize(lightVec)), 0.0);
     return lightNormalizedIntensity * lightDistanceIntensity;
 }

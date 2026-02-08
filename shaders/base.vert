@@ -32,5 +32,9 @@ void main() {
 
     fragWorldPos = worldPos.xyz;
     mat3 matMult = transpose(inverse(mat3(pcs.model)));
-    fragNormal = normalize(matMult * inNormal);
+    if (inNormal == vec3(0.0, 0.0, 0.0)) {
+        fragNormal = inNormal;
+    } else {
+        fragNormal = normalize(matMult * inNormal);
+    }
 }
