@@ -70,7 +70,7 @@ namespace volchara {
             void delObject(volchara::Object* obj);
             void addLight(volchara::DirectionalLight* obj);
             Plane objPlaneFromWorldCoordinates(InitDataPlane vertices);
-            GLTFModel objGLTFModelFromFile(std::filesystem::path modelPath);
+            Object objGLTFModelFromFile(std::filesystem::path modelPath);
             Box objBoxFromWorldCoordinates(InitDataBox vertices);
             void setAmbientLight(InitDataLight data);
             DirectionalLight objDirectionalLightFromWorldCoordinates(InitDataLight data);
@@ -275,11 +275,11 @@ namespace volchara {
             vk::raii::ShaderModule createShaderModule(const std::vector<unsigned char>& code);
             void createGraphicsPipeline();
             void createCommandPool();
-            void createStagingBuffer();
-            void createVertexBuffer();
-            void createIndexBuffer();
+            void createStagingBuffer(uint32_t size);
+            void createVertexBuffer(uint32_t size);
+            void createIndexBuffer(uint32_t size);
             void createUniformBuffers();
-            void createSSBOBuffer();
+            void createSSBOBuffer(uint32_t size);
             RAIIvmaImage createImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::ImageAspectFlags aspectFlags = vk::ImageAspectFlagBits::eColor);
             vk::raii::CommandBuffer beginSingleTimeCommands();
             void endSingleTimeCommands(vk::raii::CommandBuffer& buffer);

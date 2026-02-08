@@ -10,6 +10,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <tiny_gltf.h>
 
 namespace volchara {
     class Renderer;
@@ -72,8 +73,11 @@ namespace volchara {
         static std::vector<vk::VertexInputAttributeDescription> getAttributeDescriptions();
     };
 
+    class Object;
+
     class Transform {
         public:
+        Object* parent = nullptr;
         glm::vec3 translation{0,0,0};
         glm::vec3 scaling{1,1,1};
         glm::quat rotationQuat{1,0,0,0};
@@ -106,7 +110,8 @@ namespace volchara {
         };
         Rotation rotation = nullptr;
 
-        Transform() {
+        Transform(Object* newParent) {
+            parent = newParent;
             position = Position(this);
             rotation = Rotation(this);
         }
@@ -121,14 +126,15 @@ namespace volchara {
 
     class Object {
     public:
+        Object* parent = nullptr;
+        std::vector<Object*> children;
         std::vector<Vertex> vertices;
         std::vector<uint32_t> indices;
         std::vector<std::function<void(Object*, float, std::set<int>)>> frameCallbacks{};
-        Transform transform;
+        Transform transform = Transform(this);
         Renderer* renderer;
         uint32_t textureIndex = 0;
         uint32_t normalIndex = 0;
-        uint32_t maxVertexIndex = 0;
 
         Object(Renderer &renderer, std::vector<Vertex> initVertices, std::vector<uint32_t> initIndices = {}, glm::vec3 translation = {0, 0, 0}, glm::vec3 scaling = {1, 1, 1}, glm::quat rotation = {1,0,0,0});
         virtual ~Object() = default;  // for RTTI and callback polymorphism
@@ -152,8 +158,10 @@ namespace volchara {
     };
 
     class GLTFModel : public Object {
+        private:
+            static Object* traverseNode(Renderer &renderer, tinygltf::Model& model, int nodeId, std::map<int, int>& textureMapping);
         public:
-            static GLTFModel fromFile(Renderer& renderer, std::filesystem::path modelPath);
+            static Object fromFile(Renderer& renderer, std::filesystem::path modelPath);
             GLTFModel(Renderer& renderer, std::vector<Vertex> vertices, std::vector<uint32_t> indices = {}, glm::vec3 translation = {0, 0, 0}, glm::vec3 scaling = {1, 1, 1}, glm::quat rotation = {1,0,0,0}) : Object(renderer, vertices, indices, translation, scaling, rotation) {};
     };
 

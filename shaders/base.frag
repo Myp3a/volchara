@@ -41,9 +41,6 @@ void main() {
     if ((pcs.debugFlags & DEBUG_COLOR_WIREFRAME) != 0u) {
         pixelColor = vec4(vec3(0.0, 1.0, 1.0), 1.0);
     }
-    else if (fragColor.r != 0 || fragColor.g != 0 || fragColor.b != 0) {
-        pixelColor = vec4(fragColor, 1.0);
-    }
     else {
         pixelColor = texture(sampler2D(textures[pcs.textureId], texSampler), fragTexCoord);
     }

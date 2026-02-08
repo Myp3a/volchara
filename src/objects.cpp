@@ -149,9 +149,19 @@ namespace volchara {
     }
 
     glm::mat4 Transform::modelMatrix() {
-        glm::mat4 translationMatrix = glm::translate(translation);
-        glm::mat4 scaleMatrix = glm::scale(scaling);
-        glm::mat4 rotationMatrix = glm::toMat4(rotationQuat);
+        glm::vec3 cumulativeTranslation = this->translation;
+        glm::quat cumulativeRotation = this->rotationQuat;
+        glm::vec3 cumulativeScale = this->scaling;
+        Object* parent = this->parent->parent;
+        while (!(parent == nullptr)) {
+            cumulativeTranslation += parent->transform.translation;
+            cumulativeRotation *= parent->transform.rotationQuat;
+            cumulativeScale = parent->transform.scaling;
+            parent = parent->parent;
+        }
+        glm::mat4 translationMatrix = glm::translate(cumulativeTranslation);
+        glm::mat4 rotationMatrix = glm::toMat4(cumulativeRotation);
+        glm::mat4 scaleMatrix = glm::scale(cumulativeScale);
         glm::mat4 result = translationMatrix * rotationMatrix * scaleMatrix;
         return result;
     }
@@ -202,7 +212,6 @@ namespace volchara {
                 newIndices.push_back(pos->second);
             }
         }
-        maxVertexIndex = *std::max_element(newIndices.begin(), newIndices.end());
         vertices = newVertices;
         indices = newIndices;
     }
@@ -232,8 +241,117 @@ namespace volchara {
         }
         return obj;
     }
+
+    Object* GLTFModel::traverseNode(Renderer &renderer, tinygltf::Model& model, int nodeId, std::map<int, int>& textureMapping) {
+        tinygltf::Node& node = model.nodes[nodeId];
+        Object* rootObject;
+        std::vector<Vertex> resVertices;
+        std::vector<uint32_t> resIndices;
+        glm::vec3 translation{0, 0, 0};
+        glm::quat rotation(1, 0, 0, 0);
+        glm::vec3 scale{1, 1, 1};
+        int materialIndex = -1;
+        if (node.mesh > -1) {
+            tinygltf::Mesh& mesh = model.meshes[node.mesh];
+            for (const tinygltf::Primitive prim : mesh.primitives) {
+                materialIndex = prim.material;
+                if (prim.mode != TINYGLTF_MODE_TRIANGLES && prim.mode != 0) {
+                    throw std::runtime_error("failed to load gltf: currently only triangle load available");
+                }
+
+                auto iterPosition = prim.attributes.find("POSITION");
+                if (iterPosition == prim.attributes.end()) {
+                    continue;
+                }
+                tinygltf::Accessor accessorPosition = model.accessors[iterPosition->second];
+                if (accessorPosition.type != TINYGLTF_TYPE_VEC3 || accessorPosition.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT) {
+                    throw std::runtime_error("failed to load gltf: position not vec3 float");
+                }
+                tinygltf::BufferView& bufferViewPosition = model.bufferViews[accessorPosition.bufferView];
+                tinygltf::Buffer& bufferPosition = model.buffers[bufferViewPosition.buffer];
+                const float* positions = reinterpret_cast<const float*>(&bufferPosition.data[bufferViewPosition.byteOffset + accessorPosition.byteOffset]);
+
+                auto iterTexCoord = prim.attributes.find("TEXCOORD_0");
+                if (iterTexCoord == prim.attributes.end()) {
+                    continue;
+                }
+                tinygltf::Accessor accessorTexCoord = model.accessors[iterTexCoord->second];
+                if (accessorTexCoord.type != TINYGLTF_TYPE_VEC2 || accessorTexCoord.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT) {
+                    throw std::runtime_error("failed to load gltf: uv not vec2 float");
+                }
+                tinygltf::BufferView& bufferViewTexCoord = model.bufferViews[accessorTexCoord.bufferView];
+                tinygltf::Buffer& bufferTexCoord = model.buffers[bufferViewTexCoord.buffer];
+                const float* texcoords = reinterpret_cast<const float*>(&bufferTexCoord.data[bufferViewTexCoord.byteOffset + accessorTexCoord.byteOffset]);
+
+                if (prim.indices >= 0) {
+                    uint32_t indexOffset = resVertices.size();
+                    tinygltf::Accessor accessorIndices = model.accessors[prim.indices];
+                    tinygltf::BufferView& bufferViewIndices = model.bufferViews[accessorIndices.bufferView];
+                    tinygltf::Buffer& bufferIndices = model.buffers[bufferViewIndices.buffer];
+                    const char* indices = reinterpret_cast<const char*>(&bufferIndices.data[bufferViewIndices.byteOffset + accessorIndices.byteOffset]);
+                    for (size_t i = 0; i < accessorIndices.count; i++) {
+                        uint32_t index;
+                        switch (accessorIndices.componentType) {
+                            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+                                index = reinterpret_cast<const uint8_t*>(indices)[i];
+                                break;
+                            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
+                                index = reinterpret_cast<const uint16_t*>(indices)[i];
+                                break;
+                            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
+                                index = reinterpret_cast<const uint32_t*>(indices)[i];
+                                break;
+                        }
+                        resIndices.push_back(index + indexOffset);
+                    }
+                    for (size_t vertexId = 0; vertexId < accessorPosition.count; vertexId++) {
+                        Vertex v;
+                        v.pos = glm::vec3(positions[vertexId*3 + 0], positions[vertexId*3 + 1], positions[vertexId*3 + 2]);
+                        v.texCoord = glm::vec2(texcoords[vertexId*2 + 0], texcoords[vertexId*2 + 1]);
+                        v.color = glm::vec3(1, 0, 0);
+                        resVertices.push_back(v);
+                    }
+                }
+                else {
+                    for (size_t i = 0; i < accessorPosition.count; i++) {
+                        Vertex v;
+                        v.pos = glm::vec3(positions[i*3 + 0], positions[i*3 + 1], positions[i*3 + 2]);
+                        v.texCoord = glm::vec2(texcoords[i*2 + 0], texcoords[i*2 + 1]);
+                        v.color = glm::vec3(1, 0, 0);
+                        resIndices.push_back(resVertices.size());
+                        resVertices.push_back(v);
+                    }
+                }
+            }
+        }
+        if (node.translation.size() > 0) {
+            translation = {node.translation[0], node.translation[1], node.translation[2]};
+        }
+        if (node.rotation.size() > 0) {
+            rotation = {static_cast<float>(node.rotation[0]), static_cast<float>(node.rotation[1]), static_cast<float>(node.rotation[2]), static_cast<float>(node.rotation[3])};
+        }
+        if (node.scale.size() > 0) {
+            scale = {node.scale[0], node.scale[1], node.scale[2]};
+        }
+        rootObject = new Object(renderer, resVertices, resIndices, translation, scale, rotation);
+        if (materialIndex > -1) {
+            tinygltf::Material& baseMat = model.materials[materialIndex];
+            if (baseMat.values["baseColorTexture"].number_value > -1) {
+                rootObject->textureIndex = textureMapping[baseMat.values["baseColorTexture"].number_value];
+            }
+            if (baseMat.normalTexture.index > -1) {
+                rootObject->normalIndex = textureMapping[baseMat.normalTexture.index];
+            }
+        }
+        for (int child : node.children) {
+            Object* object = traverseNode(renderer, model, child, textureMapping);
+            object->parent = rootObject;
+            rootObject->children.push_back(object);
+        }
+        return rootObject;
+    }
     
-    GLTFModel GLTFModel::fromFile(Renderer &renderer, std::filesystem::path modelPath) {
+    Object GLTFModel::fromFile(Renderer &renderer, std::filesystem::path modelPath) {
         tinygltf::TinyGLTF gltfLoader;
         tinygltf::Model model;
         std::string err;
@@ -285,104 +403,16 @@ namespace volchara {
                 }
             }
         }
-        std::vector<Vertex> resVertices;
-        std::vector<uint32_t> resIndices;
+        
         tinygltf::Scene& defScene = model.scenes[model.defaultScene];
+        Object* rootObject = new Object(renderer, {});
         std::vector<int> nodes(defScene.nodes.begin(), defScene.nodes.end());
-        while (!nodes.empty()) {
-            int node_id = nodes.back();
-            nodes.pop_back();
-            tinygltf::Node& node = model.nodes[node_id];
-            for (int child : node.children) {
-                nodes.push_back(child);
-            }
-            if (node.mesh < 0) {
-                continue;
-            }
-
-            tinygltf::Mesh& mesh = model.meshes[node.mesh];
-            for (const tinygltf::Primitive prim : mesh.primitives) {
-                if (prim.mode != TINYGLTF_MODE_TRIANGLES && prim.mode != 0) {
-                    throw std::runtime_error("failed to load gltf: currently only triangle load available");
-                }
-
-                auto iterPosition = prim.attributes.find("POSITION");
-                if (iterPosition == prim.attributes.end()) {
-                    continue;
-                }
-                tinygltf::Accessor accessorPosition = model.accessors[iterPosition->second];
-                if (accessorPosition.type != TINYGLTF_TYPE_VEC3 || accessorPosition.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT) {
-                    throw std::runtime_error("failed to load gltf: position not vec3 float");
-                }
-                auto iterTexCoord = prim.attributes.find("TEXCOORD_0");
-                if (iterTexCoord == prim.attributes.end()) {
-                    continue;
-                }
-                tinygltf::Accessor accessorTexCoord = model.accessors[iterTexCoord->second];
-                if (accessorTexCoord.type != TINYGLTF_TYPE_VEC2 || accessorTexCoord.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT) {
-                    throw std::runtime_error("failed to load gltf: uv not vec2 float");
-                }
-                
-                tinygltf::BufferView& bufferViewPosition = model.bufferViews[accessorPosition.bufferView];
-                tinygltf::Buffer& bufferPosition = model.buffers[bufferViewPosition.buffer];
-                const float* positions = reinterpret_cast<const float*>(&bufferPosition.data[bufferViewPosition.byteOffset + accessorPosition.byteOffset]);
-
-                tinygltf::BufferView& bufferViewTexCoord = model.bufferViews[accessorTexCoord.bufferView];
-                tinygltf::Buffer& bufferTexCoord = model.buffers[bufferViewTexCoord.buffer];
-                const float* texcoords = reinterpret_cast<const float*>(&bufferTexCoord.data[bufferViewTexCoord.byteOffset + accessorTexCoord.byteOffset]);
-
-                if (prim.indices >= 0) {
-                    int indexOffset = resVertices.size();
-                    tinygltf::Accessor accessorIndices = model.accessors[prim.indices];
-                    tinygltf::BufferView& bufferViewIndices = model.bufferViews[accessorIndices.bufferView];
-                    tinygltf::Buffer& bufferIndices = model.buffers[bufferViewIndices.buffer];
-                    const char* indices = reinterpret_cast<const char*>(&bufferIndices.data[bufferViewIndices.byteOffset + accessorIndices.byteOffset]);
-                    for (size_t i = 0; i < accessorIndices.count; i++) {
-                        uint32_t index;
-                        switch (accessorIndices.componentType) {
-                            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
-                                index = indices[i];
-                                break;
-                            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
-                                index = reinterpret_cast<const uint16_t*>(indices)[i];
-                                break;
-                            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
-                                index = reinterpret_cast<const uint32_t*>(indices)[i];
-                                break;
-                        }
-                        resIndices.push_back(index + indexOffset);
-                    }
-                    for (size_t vertexId = 0; vertexId < accessorPosition.count; vertexId++) {
-                        Vertex v;
-                        v.pos = glm::vec3(positions[vertexId*3 + 0], positions[vertexId*3 + 1], positions[vertexId*3 + 2]);
-                        v.texCoord = glm::vec2(texcoords[vertexId*2 + 0], texcoords[vertexId*2 + 1]);
-                        if (solid_color) {
-                            v.color = glm::vec3(1, 0, 0);
-                        }
-                        resVertices.push_back(v);
-                    }
-                }
-                else {
-                    for (size_t i = 0; i < accessorPosition.count; i++) {
-                        Vertex v;
-                        v.pos = glm::vec3(positions[i*3 + 0], positions[i*3 + 1], positions[i*3 + 2]);
-                        v.texCoord = glm::vec2(texcoords[i*2 + 0], texcoords[i*2 + 1]);
-                        if (solid_color) {
-                            v.color = glm::vec3(1, 0, 0);
-                        }
-                        resIndices.push_back(resVertices.size());
-                        resVertices.push_back(v);
-                    }
-                }
-            }
+        for (int nodeId : nodes) {
+            Object* object = traverseNode(renderer, model, nodeId, textureMapping);
+            object->parent = rootObject;
+            rootObject->children.push_back(object);
         }
-        GLTFModel obj(renderer, resVertices, resIndices);
-        if (!solid_color) {
-            tinygltf::Material& baseMat = model.materials[0];
-            obj.textureIndex = textureMapping[baseMat.values["baseColorTexture"].number_value];
-            obj.normalIndex = textureMapping[baseMat.normalTexture.index];
-        }
-        return obj;
+        return *rootObject;
     }
 
     std::array<glm::vec3, 3> Box::calcOrientation(InitDataPlane frontOrientationPlane) {

@@ -71,7 +71,7 @@ namespace volchara {
         return Plane::fromWorldCoordinates(*this, vertices);
     }
 
-    GLTFModel Renderer::objGLTFModelFromFile(std::filesystem::path modelPath) {
+    Object Renderer::objGLTFModelFromFile(std::filesystem::path modelPath) {
         return GLTFModel::fromFile(*this, modelPath);
     }
 
@@ -96,17 +96,28 @@ namespace volchara {
         std::vector<volchara::Vertex> vertices;
         std::vector<uint32_t> indices;
         uint32_t indexOffset = 0;
-        for (volchara::Object* obj : objects) {
+        std::vector<Object*> allObjects = objects;
+        for (int i = 0; i < allObjects.size(); i++) {
+            if (allObjects[i]->children.size() > 0) {
+                for (Object* child : allObjects[i]->children) {
+                    allObjects.push_back(child);
+                }
+            }
+        }
+        for (volchara::Object* obj : allObjects) {
             if (!obj->vertices.empty()) {
                 vertices.insert(vertices.end(), obj->vertices.begin(), obj->vertices.end());
                 std::transform(obj->indices.begin(), obj->indices.end(), std::back_inserter(indices), [indexOffset](uint32_t index){return index + indexOffset;});
-                indexOffset += obj->maxVertexIndex + 1;
+                indexOffset += obj->vertices.size();
             }
         }
+        createStagingBuffer((size_t)(indices.size() * sizeof(uint32_t)));
+        createVertexBuffer((size_t)(vertices.size() * sizeof(volchara::Vertex)));
+        createIndexBuffer((size_t)(indices.size() * sizeof(uint32_t)));
         stagingBuffer.copyFrom(vertices.data(), (size_t)(vertices.size() * sizeof(volchara::Vertex)));
-        vertexBuffer.copyFrom(stagingBuffer.allocInfo().pMappedData, 8388608);
+        vertexBuffer.copyFrom(stagingBuffer.allocInfo().pMappedData, (size_t)(vertices.size() * sizeof(volchara::Vertex)));
         stagingBuffer.copyFrom(indices.data(), (size_t)(indices.size() * sizeof(uint32_t)));
-        indexBuffer.copyFrom(stagingBuffer.allocInfo().pMappedData, 8388608);
+        indexBuffer.copyFrom(stagingBuffer.allocInfo().pMappedData, (size_t)(indices.size() * sizeof(uint32_t)));
     }
 
     void Renderer::putLightToBuffer() {
@@ -147,11 +158,11 @@ namespace volchara {
         createDescriptorSetLayout();
         createGraphicsPipeline();
         createCommandPool();
-        createStagingBuffer();
-        createVertexBuffer();
-        createIndexBuffer();
+        createStagingBuffer(8388608);
+        createVertexBuffer(8388608);
+        createIndexBuffer(8388608);
         createUniformBuffers();
-        createSSBOBuffer();
+        createSSBOBuffer(8388608 * maxTextures);
         createDepthResources();
         createNormalResources();
         createIntermediateColorResources();
@@ -942,9 +953,9 @@ namespace volchara {
         commandPool = device.createCommandPool(poolInfo);
     }
 
-    void Renderer::createStagingBuffer() {
+    void Renderer::createStagingBuffer(uint32_t size) {
         vk::BufferCreateInfo bufferInfo{
-            .size = 8388608, // 8MB //vertices.size() * sizeof(Vertex) //indices.size() * sizeof(uint32_t),
+            .size = size,
             .usage = vk::BufferUsageFlagBits::eTransferSrc,
             .sharingMode = vk::SharingMode::eExclusive,
         };
@@ -955,9 +966,9 @@ namespace volchara {
         stagingBuffer = allocator.createBuffer(bufferInfo, allocInfo);
     }
 
-    void Renderer::createVertexBuffer() {
+    void Renderer::createVertexBuffer(uint32_t size) {
         vk::BufferCreateInfo bufferInfo{
-            .size = 8388608, // 8MB //vertices.size() * sizeof(Vertex)
+            .size = size,
             .usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
             .sharingMode = vk::SharingMode::eExclusive,
         };
@@ -968,9 +979,9 @@ namespace volchara {
         vertexBuffer = allocator.createBuffer(bufferInfo, allocInfo);
     }
 
-    void Renderer::createIndexBuffer() {
+    void Renderer::createIndexBuffer(uint32_t size) {
         vk::BufferCreateInfo bufferInfo{
-            .size = 8388608, // 8MB //indices.size() * sizeof(uint32_t),
+            .size = size,
             .usage = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
             .sharingMode = vk::SharingMode::eExclusive,
         };
@@ -1017,9 +1028,9 @@ namespace volchara {
         directionalLightBuffer = allocator.createBuffer(directionalBufferInfo, directionalAllocInfo);
     }
 
-    void Renderer::createSSBOBuffer() {
+    void Renderer::createSSBOBuffer(uint32_t size) {
         vk::BufferCreateInfo bufferInfo{
-            .size = 8388608 * maxTextures, // 8MB * x
+            .size = size,
             .usage = vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
             .sharingMode = vk::SharingMode::eExclusive,
         };
@@ -1568,13 +1579,21 @@ namespace volchara {
         commandBuffers[bufferIndex].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, colorPipelineLayout, 3, *descriptorSetsAmbientLightUBO[0], nullptr);
         commandBuffers[bufferIndex].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, colorPipelineLayout, 4, *descriptorSetsDirectionalLightUBO[0], nullptr);
         uint32_t alreadyDrawn = 0;
-        for (int i = 0; i < objects.size(); i++) {
-            pushConstants.model = objects[i]->transform.modelMatrix();
-            pushConstants.textureIndex = objects[i]->textureIndex;
-            pushConstants.normalIndex = objects[i]->normalIndex;
+        std::vector<Object*> allObjects = objects;
+        for (int i = 0; i < allObjects.size(); i++) {
+            if (allObjects[i]->children.size() > 0) {
+                for (Object* child : allObjects[i]->children) {
+                    allObjects.push_back(child);
+                }
+            }
+        }
+        for (int i = 0; i < allObjects.size(); i++) {
+            pushConstants.model = allObjects[i]->transform.modelMatrix();
+            pushConstants.textureIndex = allObjects[i]->textureIndex;
+            pushConstants.normalIndex = allObjects[i]->normalIndex;
             commandBuffers[bufferIndex].pushConstants<PushConstants>(colorPipelineLayout, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, {pushConstants});
-            commandBuffers[bufferIndex].drawIndexed(objects[i]->indices.size(), 1, alreadyDrawn, 0, 0);
-            alreadyDrawn += objects[i]->indices.size();
+            commandBuffers[bufferIndex].drawIndexed(allObjects[i]->indices.size(), 1, alreadyDrawn, 0, 0);
+            alreadyDrawn += allObjects[i]->indices.size();
         }
 
         commandBuffers[bufferIndex].nextSubpass(vk::SubpassContents::eInline);
