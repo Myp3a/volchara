@@ -10,6 +10,7 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/hash.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 #include <stb_image.h>
 #include <tiny_gltf.h>
 
@@ -148,21 +149,20 @@ namespace volchara {
         cw(-degrees, world);
     }
 
-    glm::mat4 Transform::modelMatrix() {
-        glm::vec3 cumulativeTranslation = this->translation;
-        glm::quat cumulativeRotation = this->rotationQuat;
-        glm::vec3 cumulativeScale = this->scaling;
-        Object* parent = this->parent->parent;
-        while (!(parent == nullptr)) {
-            cumulativeTranslation += parent->transform.translation;
-            cumulativeRotation *= parent->transform.rotationQuat;
-            cumulativeScale = parent->transform.scaling;
-            parent = parent->parent;
-        }
-        glm::mat4 translationMatrix = glm::translate(cumulativeTranslation);
-        glm::mat4 rotationMatrix = glm::toMat4(cumulativeRotation);
-        glm::mat4 scaleMatrix = glm::scale(cumulativeScale);
+    glm::mat4 multiplyHelper(Object* current) {
+        glm::mat4 translationMatrix = glm::translate(current->transform.translation);
+        glm::mat4 rotationMatrix = glm::toMat4(current->transform.rotationQuat);
+        glm::mat4 scaleMatrix = glm::scale(current->transform.scaling);
         glm::mat4 result = translationMatrix * rotationMatrix * scaleMatrix;
+        if (current->parent == nullptr) {
+            return result;
+        } else {
+            return multiplyHelper(current->parent) * result;
+        }
+    }
+
+    glm::mat4 Transform::modelMatrix() {
+        glm::mat4 result = multiplyHelper(this->parent);
         return result;
     }
 
@@ -333,11 +333,22 @@ namespace volchara {
         if (node.scale.size() > 0) {
             scale = {node.scale[0], node.scale[1], node.scale[2]};
         }
+        if (node.matrix.size() > 0) {
+            glm::mat4 nodeMatrix = glm::mat4(
+                node.matrix[0], node.matrix[1], node.matrix[2], node.matrix[3],
+                node.matrix[4], node.matrix[5], node.matrix[6], node.matrix[7],
+                node.matrix[8], node.matrix[9], node.matrix[10], node.matrix[11],
+                node.matrix[12], node.matrix[13], node.matrix[14], node.matrix[15]
+            );
+            glm::vec3 skew;
+            glm::vec4 perspective;
+            glm::decompose(nodeMatrix, scale, rotation, translation, skew, perspective);
+        }
         rootObject = new Object(renderer, resVertices, resIndices, translation, scale, rotation);
         if (materialIndex > -1) {
             tinygltf::Material& baseMat = model.materials[materialIndex];
-            if (baseMat.values["baseColorTexture"].number_value > -1) {
-                rootObject->textureIndex = textureMapping[baseMat.values["baseColorTexture"].number_value];
+            if (baseMat.pbrMetallicRoughness.baseColorTexture.index > -1) {
+                rootObject->textureIndex = textureMapping[baseMat.pbrMetallicRoughness.baseColorTexture.index];
             }
             if (baseMat.normalTexture.index > -1) {
                 rootObject->normalIndex = textureMapping[baseMat.normalTexture.index];
