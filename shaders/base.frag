@@ -9,28 +9,18 @@ layout(location = 3) in vec3 fragNormal;
 layout(set = 1, binding = 0) uniform sampler texSampler;
 layout(set = 1, binding = 1) uniform texture2D textures[];
 
-layout(set = 3, binding = 0) uniform AmbientLightUniformBufferObject {
-    vec3 color;
-    float brightness;
-} ambient;
-
-layout(set = 4, binding = 0) uniform DirectionalLightUniformBufferObject {
-    vec3 color;
-    float brightness;
-    mat4 model;
-} directional;
-
 layout(push_constant) uniform PushConstants {
     mat4 model;
     uint textureId;
     uint normalId;
-    vec4 color;
-    float brightness;
+    uint emissiveId;
+    float alphaCutoff;
     uint debugFlags;
 } pcs;
 
 layout(location = 0) out vec4 outColor;
-layout(location = 1) out vec4 outNormal;
+layout(location = 1) out vec4 outEmissive;
+layout(location = 2) out vec4 outNormal;
 
 const uint DEBUG_COLOR_NORMALS = 1u << 0;
 const uint DEBUG_COLOR_DEPTH = 1u << 1;
@@ -44,6 +34,7 @@ void main() {
     else {
         pixelColor = texture(sampler2D(textures[pcs.textureId], texSampler), fragTexCoord);
     }
+    if (pixelColor.a < pcs.alphaCutoff) discard;
     outColor = pixelColor;
     if (pcs.normalId != 0) {
         outNormal = texture(sampler2D(textures[pcs.normalId], texSampler), fragTexCoord);

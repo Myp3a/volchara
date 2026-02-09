@@ -8,8 +8,9 @@ layout(binding = 0) uniform UniformBufferObject {
 layout(push_constant) uniform PushConstants {
     mat4 model;
     uint textureId;
-    vec4 color;
-    float brightness;
+    uint normalId;
+    uint emissiveId;
+    float alphaCutoff;
     uint debugFlags;
 } pcs;
 

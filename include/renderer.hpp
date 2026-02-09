@@ -47,6 +47,7 @@ namespace volchara {
         NORMALS,
         DEPTH,
         WIREFRAME,
+        UNLIT,
     };
 
     struct DebugFeatures {
@@ -162,13 +163,13 @@ namespace volchara {
             vk::raii::DescriptorSetLayout descriptorSetLayoutUBO = nullptr;
             vk::raii::DescriptorSetLayout descriptorSetLayoutTextures = nullptr;
             vk::raii::DescriptorSetLayout descriptorSetLayoutSSBO = nullptr;
-            vk::raii::DescriptorSetLayout descriptorSetLayoutAmbientLightUBO = nullptr;
-            vk::raii::DescriptorSetLayout descriptorSetLayoutDirectionalLightUBO = nullptr;
             vk::raii::DescriptorSetLayout descriptorSetLayoutLightSubpass = nullptr;
             vk::raii::PipelineLayout colorPipelineLayout = nullptr;
             vk::raii::PipelineLayout lightPipelineLayout = nullptr;
+            vk::raii::PipelineLayout transparencyPipelineLayout = nullptr;
             vk::raii::Pipeline colorGraphicsPipeline = nullptr;
             vk::raii::Pipeline lightGraphicsPipeline = nullptr;
+            vk::raii::Pipeline transparencyGraphicsPipeline = nullptr;
         
             vk::raii::CommandPool commandPool = nullptr;
             std::vector<vk::raii::CommandBuffer> commandBuffers;
@@ -184,9 +185,8 @@ namespace volchara {
             RAIIvmaBuffer indexBuffer = nullptr;
             RAIIvmaBuffer ssboBuffer = nullptr;
             std::vector<RAIIvmaBuffer> uniformBuffers;
-            RAIIvmaBuffer ambientLightBuffer = nullptr;
-            RAIIvmaBuffer directionalLightBuffer = nullptr;
             std::vector<RAIIvmaImage> depthBuffers;
+            std::vector<RAIIvmaImage> emissiveBuffers;
             std::vector<RAIIvmaImage> normalBuffers;
             std::vector<RAIIvmaImage> intermediateColorBuffers;
 
@@ -194,8 +194,6 @@ namespace volchara {
             std::vector<vk::raii::DescriptorSet> descriptorSetsUBO;
             std::vector<vk::raii::DescriptorSet> descriptorSetsTextures;
             std::vector<vk::raii::DescriptorSet> descriptorSetsSSBO;
-            std::vector<vk::raii::DescriptorSet> descriptorSetsAmbientLightUBO;
-            std::vector<vk::raii::DescriptorSet> descriptorSetsDirectionalLightUBO;
             std::vector<vk::raii::DescriptorSet> descriptorSetsLightSubpass;
 
             PushConstants pushConstants;
@@ -210,9 +208,8 @@ namespace volchara {
             float mouseSensitivity = 1.0f;
         
             volchara::Camera camera;
-            volchara::AmbientLight ambientLight;
             std::vector<volchara::Object*> objects {};
-            std::vector<volchara::DirectionalLight*> lights {};
+            volchara::GPULightsBuffer lights {};
         
             bool framebufferResized = false;
             bool shouldExit = false;
@@ -243,7 +240,7 @@ namespace volchara {
             }
 
             void putObjectsToBuffer();
-            void putLightToBuffer();
+            void putLightsToBuffer();
             void initWindow();
             void initVulkan();
             void mainLoop();
@@ -285,6 +282,7 @@ namespace volchara {
             void endSingleTimeCommands(vk::raii::CommandBuffer& buffer);
             void transitionImageLayout(const vk::Image& image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
             void createDepthResources();
+            void createEmissiveResources();
             void createNormalResources();
             void createIntermediateColorResources();
             void createFramebuffers();

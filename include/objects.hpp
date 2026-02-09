@@ -51,15 +51,32 @@ namespace volchara {
         COLOR_NORMALS = 1u << 0,
         COLOR_DEPTH = 1u << 1,
         COLOR_WIREFRAME = 1u << 2,
+        COLOR_UNLIT = 1u << 3,
     };
 
     struct alignas(16) PushConstants {
         glm::mat4 model;
         uint32_t textureIndex = 0;
         uint32_t normalIndex = 0;
-        glm::vec4 color{0.0f, 0.0f, 0.0f, 0.0f};
-        float brightness = 0.0f;
+        uint32_t emissiveIndex = 0;
+        float alphaCutoff = 0.0;
         uint32_t debugFlags = 0;
+    };
+
+    struct alignas(16) GPULight {
+        glm::vec4 position;
+        glm::vec4 color;
+    };
+
+    struct alignas(16) GPULightHeader {
+        glm::vec4 ambient;
+        uint32_t lightCount;
+        glm::vec3 pad;
+    };
+
+    struct alignas(16) GPULightsBuffer {
+        GPULightHeader header;
+        GPULight lights[32];
     };
 
     struct Vertex {
@@ -135,6 +152,9 @@ namespace volchara {
         Renderer* renderer;
         uint32_t textureIndex = 0;
         uint32_t normalIndex = 0;
+        uint32_t emissiveIndex = 0;
+        float alphaCutoff = 0.0;
+        bool transparent = false;
 
         Object(Renderer &renderer, std::vector<Vertex> initVertices, std::vector<uint32_t> initIndices = {}, glm::vec3 translation = {0, 0, 0}, glm::vec3 scaling = {1, 1, 1}, glm::quat rotation = {1,0,0,0});
         virtual ~Object() = default;  // for RTTI and callback polymorphism

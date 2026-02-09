@@ -353,6 +353,15 @@ namespace volchara {
             if (baseMat.normalTexture.index > -1) {
                 rootObject->normalIndex = textureMapping[baseMat.normalTexture.index];
             }
+            if (baseMat.emissiveTexture.index > -1) {
+                rootObject->emissiveIndex = textureMapping[baseMat.emissiveTexture.index];
+            }
+            if (baseMat.alphaMode == "MASK") {
+                rootObject->alphaCutoff = baseMat.alphaCutoff;
+            }
+            if (baseMat.alphaMode == "BLEND") {
+                rootObject->transparent = true;
+            }
         }
         for (int child : node.children) {
             Object* object = traverseNode(renderer, model, child, textureMapping);
