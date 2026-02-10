@@ -180,6 +180,26 @@ namespace volchara {
         transform.scaling = scaling;
         transform.rotationQuat = rotation;
     }
+    Object::Object(Object&& other) {
+        std::swap(parent, other.parent);
+        std::swap(children, other.children);
+        for (Object* ptr : children) {
+            ptr->parent = this;
+        }
+        std::swap(vertices, other.vertices);
+        std::swap(indices, other.indices);
+        std::swap(frameCallbacks, other.frameCallbacks);
+        std::swap(transform, other.transform);
+        transform.parent = this;
+        transform.position.parent = &transform;
+        transform.rotation.parent = &transform;
+        std::swap(renderer, other.renderer);
+        std::swap(textureIndex, other.textureIndex);
+        std::swap(normalIndex, other.normalIndex);
+        std::swap(emissiveIndex, other.emissiveIndex);
+        std::swap(alphaCutoff, other.alphaCutoff);
+        std::swap(transparent, other.transparent);
+    }
     void Object::runFrameCallbacks(float passedSeconds, std::set<int> pressedKeys) {
         for (auto callback : frameCallbacks) {
             callback(this, passedSeconds, pressedKeys);
@@ -193,10 +213,17 @@ namespace volchara {
             v.color.b = color[2];
         }
     }
-    void Object::loadTexture(const std::filesystem::path path) {
+    void Object::replaceTextures(const std::filesystem::path path) {
         std::vector<unsigned char> textureData = renderer->readFile(path);
-        textureIndex = renderer->createTextureImage(textureData);
-        renderer->loadTextureToDescriptors(textureIndex);
+        int newTextureIndex = renderer->createTextureImage(textureData);
+        renderer->loadTextureToDescriptors(newTextureIndex);
+        std::vector<Object*> toReplace = {this};
+        for (int i = 0; i < toReplace.size(); i++) {
+            for (Object* ptr : toReplace[i]->children) {
+                toReplace.push_back(ptr);
+            }
+            toReplace[i]->textureIndex = newTextureIndex;
+        }
     }
     void Object::generateIndices(std::vector<Vertex> fromVertices) {
         std::vector<Vertex> newVertices;
@@ -432,7 +459,7 @@ namespace volchara {
             object->parent = rootObject;
             rootObject->children.push_back(object);
         }
-        return *rootObject;
+        return std::move(*rootObject);
     }
 
     std::array<glm::vec3, 3> Box::calcOrientation(InitDataPlane frontOrientationPlane) {

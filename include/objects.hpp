@@ -100,9 +100,8 @@ namespace volchara {
         glm::quat rotationQuat{1,0,0,0};
 
         class Position {
-            private:
-            Transform* parent;
             public:
+            Transform* parent;
             Position(Transform* loc): parent(loc) {}
             void forward(float distance, bool world = false);
             void backward(float distance, bool world = false);
@@ -114,9 +113,8 @@ namespace volchara {
         Position position = nullptr;
 
         class Rotation {
-            private:
-            Transform* parent;
             public:
+            Transform* parent;
             Rotation(Transform* loc): parent(loc) {}
             void up(float degrees, bool world = false);
             void down(float degrees, bool world = false);
@@ -158,9 +156,11 @@ namespace volchara {
 
         Object(Renderer &renderer, std::vector<Vertex> initVertices, std::vector<uint32_t> initIndices = {}, glm::vec3 translation = {0, 0, 0}, glm::vec3 scaling = {1, 1, 1}, glm::quat rotation = {1,0,0,0});
         virtual ~Object() = default;  // for RTTI and callback polymorphism
+        Object(Object& other) = delete;
+        Object(Object&& other);
         void runFrameCallbacks(float passedSeconds, std::set<int> pressedKeys);
         void setColor(std::array<float, 3> color);
-        void loadTexture(const std::filesystem::path path);
+        void replaceTextures(const std::filesystem::path path);
         void generateIndices(std::vector<Vertex> fromVertices);
     };
 

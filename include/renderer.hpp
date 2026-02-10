@@ -93,7 +93,8 @@ namespace volchara {
         
                 return buffer;
             }
-        
+
+            volchara::Camera camera;
         private:
             DebugFeatures debugFeatures;
             const std::vector<const char*> validationLayers = {
@@ -207,7 +208,6 @@ namespace volchara {
             float cameraSpeed = 1.0f;
             float mouseSensitivity = 1.0f;
         
-            volchara::Camera camera;
             std::vector<volchara::Object*> objects {};
             volchara::GPULightsBuffer lights {};
         
