@@ -42,6 +42,13 @@ define_resource_set(
 )
 use_resource_set(TARGET volchara SETS base_textures)
 
+define_resource_set(
+    NAME base_models
+    GLOB "../models/*"
+    ROOT "../"
+)
+use_resource_set(TARGET volchara SETS base_models)
+
 set(RESOURCE_DIR "${CMAKE_BINARY_DIR}/resources/")
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/resource_path.hpp.in
