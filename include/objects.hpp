@@ -97,7 +97,7 @@ namespace volchara {
         Object* parent = nullptr;
         glm::vec3 translation{0,0,0};
         glm::vec3 scaling{1,1,1};
-        glm::quat rotationQuat{1,0,0,0};
+        glm::quat rotationQuat{0,0,0,1};
 
         class Position {
             public:

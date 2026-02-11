@@ -120,9 +120,9 @@ namespace volchara {
 
     void Transform::Rotation::up(float degrees, bool world) {
         if (world) {
-            parent->rotationQuat = glm::normalize(glm::quat({degrees, 0, 0}) * parent->rotationQuat);
+            parent->rotationQuat = glm::normalize(glm::quat({degrees * glm::pi<float>() / 180, 0, 0}) * parent->rotationQuat);
         } else {
-            parent->rotationQuat = glm::normalize(parent->rotationQuat * glm::quat({degrees, 0, 0}));
+            parent->rotationQuat = glm::normalize(parent->rotationQuat * glm::quat({degrees * glm::pi<float>() / 180, 0, 0}));
         }
     }
     void Transform::Rotation::down(float degrees, bool world) {
@@ -130,9 +130,9 @@ namespace volchara {
     }
     void Transform::Rotation::left(float degrees, bool world) {
         if (world) {
-            parent->rotationQuat = glm::normalize(glm::quat({0, degrees, 0}) * parent->rotationQuat);
+            parent->rotationQuat = glm::normalize(glm::quat({0, degrees * glm::pi<float>() / 180, 0}) * parent->rotationQuat);
         } else {
-            parent->rotationQuat = glm::normalize(parent->rotationQuat * glm::quat({0, degrees, 0}));
+            parent->rotationQuat = glm::normalize(parent->rotationQuat * glm::quat({0, degrees * glm::pi<float>() / 180, 0}));
         }
     }
     void Transform::Rotation::right(float degrees, bool world) {
@@ -140,9 +140,9 @@ namespace volchara {
     }
     void Transform::Rotation::cw(float degrees, bool world) {
         if (world) {
-            parent->rotationQuat = glm::normalize(glm::quat({0, 0, -degrees}) * parent->rotationQuat);
+            parent->rotationQuat = glm::normalize(glm::quat({0, 0, -degrees * glm::pi<float>() / 180}) * parent->rotationQuat);
         } else {
-            parent->rotationQuat = glm::normalize(parent->rotationQuat * glm::quat({0, 0, -degrees}));
+            parent->rotationQuat = glm::normalize(parent->rotationQuat * glm::quat({0, 0, -degrees * glm::pi<float>() / 180}));
         }
     }
     void Transform::Rotation::ccw(float degrees, bool world) {
