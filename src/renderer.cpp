@@ -94,6 +94,22 @@ namespace volchara {
         return DirectionalLight::fromWorldCoordinates(*this, data);
     }
 
+    void Renderer::preloadTexture(std::filesystem::path texturePath) {
+        int newTextureIndex;
+        if (this->textureNameToId.contains(texturePath.filename().string())) {
+            newTextureIndex = this->textureNameToId[texturePath.filename().string()];
+        } else {
+            std::vector<unsigned char> textureData = this->readFile(texturePath);
+            newTextureIndex = this->createTextureImage(textureData);
+            this->textureNameToId[texturePath.filename().string()] = newTextureIndex;
+            this->loadTextureToDescriptors(newTextureIndex);
+        }
+    }
+
+    void Renderer::preloadModel(std::filesystem::path modelPath) {
+        Object obj = GLTFModel::fromFile(*this, modelPath);
+    }
+
     void Renderer::putObjectsToBuffer() {
         std::vector<volchara::Vertex> vertices;
         std::vector<uint32_t> indices;

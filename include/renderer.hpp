@@ -75,6 +75,8 @@ namespace volchara {
             Box objBoxFromWorldCoordinates(InitDataBox vertices);
             void setAmbientLight(InitDataLight data);
             DirectionalLight objDirectionalLightFromWorldCoordinates(InitDataLight data);
+            void preloadTexture(std::filesystem::path texturePath);
+            void preloadModel(std::filesystem::path modelPath);
 
             static std::vector<unsigned char> readFile(const std::filesystem::path filename, bool asText = false) {
                 std::ifstream file(filename, std::ios::ate | (asText ? 0 : std::ios::binary));
@@ -203,6 +205,7 @@ namespace volchara {
             vk::raii::Sampler textureSampler = nullptr;
             std::vector<RAIIvmaImage> textures;
             std::map<std::string, int> textureNameToId;
+            std::map<std::string, tinygltf::Model> modelCache;
         
             std::set<int> pressedKeys;
             glm::vec2 cursorOffset;

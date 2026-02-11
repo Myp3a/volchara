@@ -214,11 +214,11 @@ namespace volchara {
         }
     }
     void Object::replaceTextures(const std::filesystem::path path) {
-        std::vector<unsigned char> textureData = renderer->readFile(path);
         int newTextureIndex;
         if (renderer->textureNameToId.contains(path.filename().string())) {
             newTextureIndex = renderer->textureNameToId[path.filename().string()];
         } else {
+            std::vector<unsigned char> textureData = renderer->readFile(path);
             newTextureIndex = renderer->createTextureImage(textureData);
             renderer->textureNameToId[path.filename().string()] = newTextureIndex;
             renderer->loadTextureToDescriptors(newTextureIndex);
@@ -405,25 +405,31 @@ namespace volchara {
     }
     
     Object GLTFModel::fromFile(Renderer &renderer, std::filesystem::path modelPath) {
-        tinygltf::TinyGLTF gltfLoader;
         tinygltf::Model model;
-        std::string err;
-        std::string warn;
-        std::u8string unicodePathTmp = modelPath.u8string();
-        std::string unicodePath(unicodePathTmp.begin(), unicodePathTmp.end());
-        bool res;
-        if (modelPath.extension().string() == ".gltf") {
-            res = gltfLoader.LoadASCIIFromFile(&model, &err, &warn, unicodePath);
+        if (renderer.modelCache.contains(modelPath.filename().string())) {
+            model = renderer.modelCache[modelPath.filename().string()];
+        } else {
+            tinygltf::TinyGLTF gltfLoader;
+            std::string err;
+            std::string warn;
+            std::u8string unicodePathTmp = modelPath.u8string();
+            std::string unicodePath(unicodePathTmp.begin(), unicodePathTmp.end());
+            bool res;
+            if (modelPath.extension().string() == ".gltf") {
+                res = gltfLoader.LoadASCIIFromFile(&model, &err, &warn, unicodePath);
+            }
+            else if (modelPath.extension().string() == ".glb") {
+                res = gltfLoader.LoadBinaryFromFile(&model, &err, &warn, unicodePath);
+            }
+            else {
+                throw std::runtime_error(std::string("failed to load gltf: unknown extension ") + modelPath.extension().string());
+            }
+            if (!res || !err.empty()) {
+                throw std::runtime_error("failed to load gltf: " + err);
+            }
+            renderer.modelCache[modelPath.filename().string()] = model;
         }
-        else if (modelPath.extension().string() == ".glb") {
-            res = gltfLoader.LoadBinaryFromFile(&model, &err, &warn, unicodePath);
-        }
-        else {
-            throw std::runtime_error(std::string("failed to load gltf: unknown extension ") + modelPath.extension().string());
-        }
-        if (!res || !err.empty()) {
-            throw std::runtime_error("failed to load gltf: " + err);
-        }
+
         bool solid_color;
         if (model.textures.size() < 1) {
             solid_color = true;
@@ -463,7 +469,7 @@ namespace volchara {
                         renderer.loadTextureToDescriptors(rendererTextureId);
                         textureMapping[modelTextureId] = rendererTextureId;
                     } else {
-                        solid_color = true;
+                        textureMapping[modelTextureId] = 0;
                     }
                 }
             }
