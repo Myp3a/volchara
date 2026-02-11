@@ -201,6 +201,7 @@ namespace volchara {
 
             vk::raii::Sampler textureSampler = nullptr;
             std::vector<RAIIvmaImage> textures;
+            std::map<std::string, int> textureNameToId;
         
             std::set<int> pressedKeys;
             glm::vec2 cursorOffset;

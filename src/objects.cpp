@@ -215,8 +215,14 @@ namespace volchara {
     }
     void Object::replaceTextures(const std::filesystem::path path) {
         std::vector<unsigned char> textureData = renderer->readFile(path);
-        int newTextureIndex = renderer->createTextureImage(textureData);
-        renderer->loadTextureToDescriptors(newTextureIndex);
+        int newTextureIndex;
+        if (renderer->textureNameToId.contains(path.filename().string())) {
+            newTextureIndex = renderer->textureNameToId[path.filename().string()];
+        } else {
+            newTextureIndex = renderer->createTextureImage(textureData);
+            renderer->textureNameToId[path.filename().string()] = newTextureIndex;
+            renderer->loadTextureToDescriptors(newTextureIndex);
+        }
         std::vector<Object*> toReplace = {this};
         for (int i = 0; i < toReplace.size(); i++) {
             for (Object* ptr : toReplace[i]->children) {
@@ -431,22 +437,34 @@ namespace volchara {
             if (!model.images[modelTextureId].uri.empty()) {
                 // external
                 std::filesystem::path texturePath = modelPath.parent_path() / model.images[modelTextureId].uri;
-                std::vector<unsigned char> textureData = renderer.readFile(texturePath);
-                int rendererTextureId = renderer.createTextureImage(textureData);
-                renderer.loadTextureToDescriptors(rendererTextureId);
+                int rendererTextureId;
+                if (renderer.textureNameToId.contains(texturePath.filename().string())) {
+                    rendererTextureId = renderer.textureNameToId[texturePath.filename().string()];
+                } else {
+                    std::vector<unsigned char> textureData = renderer.readFile(texturePath);
+                    rendererTextureId = renderer.createTextureImage(textureData);
+                    renderer.textureNameToId[texturePath.filename().string()] = rendererTextureId;
+                    renderer.loadTextureToDescriptors(rendererTextureId);
+                }
                 textureMapping[modelTextureId] = rendererTextureId;
             } else {
                 // internal
-                int targetBufferView = model.images[modelTextureId].bufferView;
-                if (targetBufferView != -1) {
-                    tinygltf::BufferView& textureView = model.bufferViews[targetBufferView];
-                    tinygltf::Buffer& texturePosition = model.buffers[textureView.buffer];
-                    std::vector<unsigned char> textureData = std::vector<unsigned char>(texturePosition.data.begin() + textureView.byteOffset, texturePosition.data.begin() + textureView.byteOffset + textureView.byteLength);
-                    int rendererTextureId = renderer.createTextureImage(textureData);
-                    renderer.loadTextureToDescriptors(rendererTextureId);
-                    textureMapping[modelTextureId] = rendererTextureId;
+                std::string textureName = std::format("{}:{}", modelPath.filename().string(), modelTextureId);
+                if (renderer.textureNameToId.contains(textureName)) {
+                    textureMapping[modelTextureId] = renderer.textureNameToId[textureName];
                 } else {
-                    solid_color = true;
+                    int targetBufferView = model.images[modelTextureId].bufferView;
+                    if (targetBufferView != -1) {
+                        tinygltf::BufferView& textureView = model.bufferViews[targetBufferView];
+                        tinygltf::Buffer& texturePosition = model.buffers[textureView.buffer];
+                        std::vector<unsigned char> textureData = std::vector<unsigned char>(texturePosition.data.begin() + textureView.byteOffset, texturePosition.data.begin() + textureView.byteOffset + textureView.byteLength);
+                        int rendererTextureId = renderer.createTextureImage(textureData);
+                        renderer.textureNameToId[textureName] = rendererTextureId;
+                        renderer.loadTextureToDescriptors(rendererTextureId);
+                        textureMapping[modelTextureId] = rendererTextureId;
+                    } else {
+                        solid_color = true;
+                    }
                 }
             }
         }
