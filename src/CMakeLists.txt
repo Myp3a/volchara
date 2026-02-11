@@ -21,6 +21,9 @@ target_link_libraries(volchara PUBLIC glfw)
 CPMAddPackage("gh:g-truc/glm#1.0.1")
 target_link_libraries(volchara PUBLIC glm)
 
+CPMAddPackage("gh:wolfpld/tracy#v0.13.1")
+target_link_libraries(volchara PUBLIC Tracy::TracyClient)
+
 add_library(stb_image STATIC extlibs/stb_image/stb_image.cpp)
 target_include_directories(stb_image PUBLIC extlibs/stb_image)
 target_link_libraries(volchara PUBLIC stb_image)

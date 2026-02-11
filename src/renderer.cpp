@@ -25,6 +25,8 @@
 #include <utility>
 #include <vector>
 
+#include <tracy/Tracy.hpp>
+
 #include <renderer.hpp>
 #include <device_buffer_copy_handler.hpp>
 #include <objects.hpp>
@@ -1756,5 +1758,6 @@ namespace volchara {
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
         if (pressedKeys.contains(GLFW_KEY_ESCAPE)) shouldExit = true;
+        FrameMark;
     }
 };

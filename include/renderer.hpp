@@ -95,6 +95,7 @@ namespace volchara {
             }
 
             volchara::Camera camera;
+            bool shouldExit = false;
         private:
             DebugFeatures debugFeatures;
             const std::vector<const char*> validationLayers = {
@@ -213,7 +214,6 @@ namespace volchara {
             volchara::GPULightsBuffer lights {};
         
             bool framebufferResized = false;
-            bool shouldExit = false;
         
             static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
             {
