@@ -200,9 +200,9 @@ namespace volchara {
         std::swap(alphaCutoff, other.alphaCutoff);
         std::swap(transparent, other.transparent);
     }
-    void Object::runFrameCallbacks(float passedSeconds, std::set<int> pressedKeys) {
+    void Object::runFrameCallbacks(FrameCallbackData cbData) {
         for (auto callback : frameCallbacks) {
-            callback(this, passedSeconds, pressedKeys);
+            callback(this, cbData);
         }
         return;
     }

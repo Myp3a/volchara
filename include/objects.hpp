@@ -139,13 +139,19 @@ namespace volchara {
             glm::mat4 modelMatrix();
     };
 
+    struct FrameCallbackData {
+        float passedSeconds;
+        std::set<int> pressedKeys;
+        glm::vec2 cursorOffset;
+    };
+
     class Object {
     public:
         Object* parent = nullptr;
         std::vector<Object*> children;
         std::vector<Vertex> vertices;
         std::vector<uint32_t> indices;
-        std::vector<std::function<void(Object*, float, std::set<int>)>> frameCallbacks{};
+        std::vector<std::function<void(Object*, FrameCallbackData)>> frameCallbacks{};
         Transform transform = Transform(this);
         Renderer* renderer;
         uint32_t textureIndex = 0;
@@ -158,7 +164,7 @@ namespace volchara {
         virtual ~Object() = default;  // for RTTI and callback polymorphism
         Object(Object& other) = delete;
         Object(Object&& other);
-        void runFrameCallbacks(float passedSeconds, std::set<int> pressedKeys);
+        void runFrameCallbacks(FrameCallbackData cbData);
         void setColor(std::array<float, 3> color);
         void replaceTextures(const std::filesystem::path path);
         void generateIndices(std::vector<Vertex> fromVertices);

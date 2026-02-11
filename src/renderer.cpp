@@ -1701,12 +1701,17 @@ namespace volchara {
         for (int i = 0; i < objects.size(); i++) {
             volchara::Object* obj = objects[i];
             obj->runFrameCallbacks(
-                passedSeconds,
-                pressedKeys
+                {
+                    .passedSeconds = passedSeconds,
+                    .pressedKeys = pressedKeys,
+                    .cursorOffset = cursorOffset,
+                }
             );
         }
+        cursorOffset.x = 0;
+        cursorOffset.y = 0;
 
-        updateCameraPosition(passedSeconds);
+        // updateCameraPosition(passedSeconds);
         handleDebugModes();
         
         std::pair<vk::Result, uint32_t> nextImagePair = swapChain.acquireNextImage(UINT64_MAX, imageAvailableSemaphores[currentFrame], nullptr);
