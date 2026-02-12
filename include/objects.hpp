@@ -109,6 +109,7 @@ namespace volchara {
             void right(float distance, bool world = false);
             void up(float distance, bool world = false);
             void down(float distance, bool world = false);
+            glm::vec3 world();
         };
         Position position = nullptr;
 

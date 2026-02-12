@@ -1,7 +1,6 @@
 #include <array>
 #include <filesystem>
 #include <numeric>
-#include <set>
 #include <unordered_map>
 #include <vector>
 
@@ -117,6 +116,9 @@ namespace volchara {
     void Transform::Position::down(float distance, bool world) {
         up(-distance, world);
     }
+    glm::vec3 Transform::Position::world() {
+        return this->parent->modelMatrix()[3];
+    }
 
     void Transform::Rotation::up(float degrees, bool world) {
         if (world) {
@@ -149,20 +151,20 @@ namespace volchara {
         cw(-degrees, world);
     }
 
-    glm::mat4 multiplyHelper(Object* current) {
+    glm::mat4 multiplyHelper(Object* current, Object* upTo) {
         glm::mat4 translationMatrix = glm::translate(current->transform.translation);
         glm::mat4 rotationMatrix = glm::toMat4(current->transform.rotationQuat);
         glm::mat4 scaleMatrix = glm::scale(current->transform.scaling);
         glm::mat4 result = translationMatrix * rotationMatrix * scaleMatrix;
-        if (current->parent == nullptr) {
+        if (current->parent == nullptr || current->parent == upTo) {
             return result;
         } else {
-            return multiplyHelper(current->parent) * result;
+            return multiplyHelper(current->parent, upTo) * result;
         }
     }
 
     glm::mat4 Transform::modelMatrix() {
-        glm::mat4 result = multiplyHelper(this->parent);
+        glm::mat4 result = multiplyHelper(this->parent, nullptr);
         return result;
     }
 
